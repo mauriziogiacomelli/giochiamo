@@ -743,7 +743,8 @@ function floodFill(img, sx, sy, rgb) {
 function colorScreen(t, pic = 0) {
   bg('#9ee6c4');
   const RES = 64, SC = 9;
-  const pal = PALETTE.filter(c => c !== '#000000');
+  // nero "quasi nero": sembra nero ma è diverso dalle linee, così la zona si può sempre ricolorare
+  const pal = PALETTE.map(c => c === '#000000' ? '#1e1e1e' : c);
   let cur = '#ff2a1a';
   const frame = el('div', { position: 'absolute', left: '176px', top: '22px', width: px(RES * SC), height: px(RES * SC),
     border: '10px solid #ff2a1a', boxShadow: '0 0 0 6px #222, 8px 8px 0 rgba(0,0,0,.35)', background: '#fff' });
