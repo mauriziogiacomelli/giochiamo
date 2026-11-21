@@ -2083,13 +2083,13 @@ function colorModern(setId, picId) {
   // --- temi e disegni ---
   const side = el('div', { left: '772px', top: '12px', width: '240px', height: '744px' }); side.className = 'm-panel';
   COLOR_SETS.forEach((s, i) => {
-    const t = el('div', { left: px(10 + i * 37), top: '12px', width: '34px', height: '44px', fontSize: '22px', borderRadius: '12px' }, side, s.icon);
+    const t = el('div', { left: px(12 + (i % 3) * 74), top: px(12 + Math.floor(i / 3) * 56), width: '68px', height: '50px', fontSize: '30px', borderRadius: '14px' }, side, s.icon);
     t.className = 'm-tab' + (s.id === set.id ? ' on' : '');
     tap(t, () => { SFX.flip(); show(colorModern, s.id); });
   });
   const thumbs = {};
   set.pics.forEach((p, i) => {
-    const t = el('div', { left: px(12 + (i % 2) * 110), top: px(68 + Math.floor(i / 2) * 112), width: '104px', height: '104px' }, side);
+    const t = el('div', { left: px(12 + (i % 2) * 110), top: px(128 + Math.floor(i / 2) * 112), width: '104px', height: '104px' }, side);
     t.className = 'm-thumb' + (p.id === pic.id ? ' on' : '');
     let f = {};
     try { f = p.id === pic.id ? fills : JSON.parse(store('colora-' + p.id) || '{}') || {}; } catch (e) { f = {}; }
