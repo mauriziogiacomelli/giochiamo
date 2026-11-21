@@ -290,14 +290,60 @@ function party(text, again, back) {
   b2.className = 'btn';
 }
 
+// Timbrini misti per "Dipingere con le dita"
+const MIX = { id: 'mix', name: 'Tutti', bg: '#ffb3d1', items: ['🦒', '🐱', '🐄', '🚗', '🚀', '🍓', '🍌', '🐘', '🌙', '⭐'] };
+const randomTheme = () => THEMES[rnd(THEMES.length)];
+
 // =====================================================================
-//  MENU PRINCIPALE: i 5 temi
+//  SCHERMATA INIZIALE: i 5 giochi
 // =====================================================================
+const GAMES = [
+  { name: 'Memory', icon: null, x: 80, y: 130, go: () => show(themePick, memoryScreen) },
+  { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 110, go: () => show(themePick, colorScreen) },
+  { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 130, go: () => show(paintScreen, MIX) },
+  { name: 'Trova le differenze', icon: '🔍', x: 236, y: 420, go: () => show(diffScreen, randomTheme()) },
+  { name: 'Gioco dei vestiti', icon: '👗', x: 548, y: 420, go: () => show(dressScreen) },
+];
 function homeScreen() {
+  bg('#ffec3d');
+  el('div', { position: 'absolute', left: '0', right: '0', top: '16px', textAlign: 'center' }, stage,
+    `<span class="title" style="font-size:52px">${NOME ? 'Il gioco di ' + NOME : 'Giochiamo!'}</span>`);
+  const zoo = THEMES.find(t => t.id === 'zoo');
+  GAMES.forEach(a => {
+    const tile = el('div', { left: px(a.x), top: px(a.y), width: '240px', height: '220px', borderColor: '#1fb890',
+      background: '#fff', boxShadow: 'inset 0 0 0 6px #ff2a1a, 6px 6px 0 rgba(0,0,0,.35)' }, stage);
+    tile.className = 'tile';
+    if (a.icon) {
+      spriteImg(a.icon, 150, tile, { position: 'absolute', left: '35px', top: '25px' });
+    } else {
+      // mini griglia memory (con la giraffa!)
+      const cols = ['#ffe81a', '#c9e8ff', '#99ff88', '#ff9ad8', '#00e0e0', '#ffcc99'];
+      const pics = ['🦒', '🍓', null, '🚀', null, '🦒'];
+      for (let i = 0; i < 6; i++) {
+        const cell = el('div', { position: 'absolute', left: px(14 + (i % 3) * 68), top: px(18 + Math.floor(i / 3) * 86), width: '62px', height: '78px',
+          background: pics[i] ? cols[i] : 'repeating-linear-gradient(45deg,#fff 0 6px,#ffcc22 6px 12px)', border: '2px solid #333', boxSizing: 'border-box' }, tile);
+        if (pics[i]) spriteImg(pics[i], 54, cell, { margin: '10px 2px' });
+      }
+    }
+    el('div', { position: 'absolute', left: '-30px', right: '-30px', bottom: '-50px', textAlign: 'center' }, tile,
+      `<span class="title" style="font-size:24px">${a.name}</span>`);
+    tap(tile, () => { SFX.flip(); a.go(); });
+  });
+  // pulsante schermo intero
+  const fs = tap(el('div', { left: '904px', top: '700px', width: '100px', height: '54px', fontSize: '26px' }, stage, '⛶'), () => {
+    const d = document.documentElement;
+    if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(() => {});
+    else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  });
+  fs.className = 'btn blue';
+}
+
+// =====================================================================
+//  SCELTA DELLE FIGURE (per Memory e Colorare): i 5 temi
+// =====================================================================
+function themePick(game) {
   bg('linear-gradient(#2fd38b,#18b070)');
-  const title = el('div', { position: 'absolute', left: '0', right: '0', top: '26px', textAlign: 'center' }, stage,
-    `<span class="title yellow" style="font-size:56px">${NOME ? 'Il gioco di ' + NOME : 'Giochiamo!'}</span>`);
-  const pos = [[90, 140], [392, 120], [694, 140], [240, 430], [544, 430]];
+  const pos = [[90, 70], [392, 50], [694, 70], [240, 370], [544, 370]];
   THEMES.forEach((t, i) => {
     const tile = el('div', { left: px(pos[i][0]), top: px(pos[i][1]), width: '240px', height: '240px', borderColor: t.frame }, stage);
     tile.className = 'tile';
@@ -312,49 +358,7 @@ function homeScreen() {
     if (spots.some((_, k) => isAnimated(t.items[k * 2]))) onAnim(paint);
     el('div', { position: 'absolute', left: '0', right: '0', bottom: '-56px', textAlign: 'center' }, tile,
       `<span class="title" style="font-size:30px">${t.name}</span>`);
-    tap(tile, () => { SFX.flip(); show(themeScreen, t); });
-  });
-  // pulsante schermo intero
-  const fs = tap(el('div', { left: '904px', top: '700px', width: '100px', height: '54px', fontSize: '26px' }, stage, '⛶'), () => {
-    const d = document.documentElement;
-    if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(() => {});
-    else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-  });
-  fs.className = 'btn blue';
-}
-
-// =====================================================================
-//  MENU DEL TEMA: le 5 attività
-// =====================================================================
-function themeScreen(t) {
-  bg('#ffec3d');
-  el('div', { position: 'absolute', left: '0', right: '0', top: '16px', textAlign: 'center' }, stage,
-    `<span class="title" style="font-size:46px">${t.name}</span>`);
-  const acts = [
-    { name: 'Memory', icon: null, x: 80, y: 130, fn: memoryScreen },
-    { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 110, fn: colorScreen },
-    { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 130, fn: paintScreen },
-    { name: 'Trova le differenze', icon: '🔍', x: 236, y: 420, fn: diffScreen },
-    { name: 'Gioco dei vestiti', icon: '👗', x: 548, y: 420, fn: dressScreen },
-  ];
-  acts.forEach(a => {
-    const tile = el('div', { left: px(a.x), top: px(a.y), width: '240px', height: '220px', borderColor: '#1fb890',
-      background: '#fff', boxShadow: 'inset 0 0 0 6px #ff2a1a, 6px 6px 0 rgba(0,0,0,.35)' }, stage);
-    tile.className = 'tile';
-    if (a.icon) {
-      spriteImg(a.icon, 150, tile, { position: 'absolute', left: '35px', top: '25px' });
-    } else {
-      // mini griglia memory
-      const cols = ['#ffe81a', '#c9e8ff', '#99ff88', '#ff9ad8', '#00e0e0', '#ffcc99'];
-      for (let i = 0; i < 6; i++) {
-        const cell = el('div', { position: 'absolute', left: px(14 + (i % 3) * 68), top: px(18 + Math.floor(i / 3) * 86), width: '62px', height: '78px',
-          background: i === 2 || i === 4 ? 'repeating-linear-gradient(45deg,#fff 0 6px,#ffcc22 6px 12px)' : cols[i], border: '2px solid #333', boxSizing: 'border-box' }, tile);
-        if (!(i === 2 || i === 4)) spriteImg(t.items[[0, 1, 0, 1, 1, 0][i] + (i > 2 ? 2 : 0)], 54, cell, { margin: '10px 2px' });
-      }
-    }
-    el('div', { position: 'absolute', left: '-30px', right: '-30px', bottom: '-50px', textAlign: 'center' }, tile,
-      `<span class="title" style="font-size:24px">${a.name}</span>`);
-    tap(tile, () => { SFX.flip(); show(a.fn, t); });
+    tap(tile, () => { SFX.flip(); show(game, t); });
   });
   backBtn(() => show(homeScreen));
 }
@@ -391,14 +395,14 @@ function memoryScreen(t, nCards) {
       if (a.k === b.k) {
         a.classList.add('done'); b.classList.add('done');
         setTimeout(SFX.ok, 200);
-        if (++found === nCards / 2) setTimeout(() => party('BRAVISSIMA!', () => show(memoryScreen, t, nCards), () => show(themeScreen, t)), 900);
+        if (++found === nCards / 2) setTimeout(() => party('BRAVISSIMA!', () => show(memoryScreen, t, nCards), () => show(themePick, memoryScreen)), 900);
       } else {
         busy = true;
         setTimeout(() => { a.classList.remove('open'); b.classList.remove('open'); busy = false; }, 1100);
       }
     });
   });
-  backBtn(() => show(themeScreen, t));
+  backBtn(() => show(themePick, memoryScreen));
   // scelta difficoltà
   [6, 12, 20].forEach((n, i) => {
     const b = tap(el('div', { left: px(724 + i * 100), top: '700px', width: '90px', height: '56px', fontSize: '24px' }, stage, n), () => {
@@ -483,7 +487,7 @@ function colorScreen(t, pic = 0) {
     spriteImg(e, 80, b, { margin: '9px 4px' });
     tap(b, () => { SFX.flip(); show(colorScreen, t, i); });
   });
-  backBtn(() => show(themeScreen, t));
+  backBtn(() => show(themePick, colorScreen));
   const r = tap(el('div', { left: '330px', top: '696px', width: '270px', height: '60px' }, stage, '↻ Ricomincia'), () => { SFX.tap(); show(colorScreen, t, pic); });
   r.className = 'btn blue';
   const s = tap(el('div', { left: '620px', top: '696px', width: '160px', height: '60px' }, stage, '💾 Salva'), () => { SFX.tap(); saveCanvas(c, 'colorato', 12); });
@@ -565,7 +569,7 @@ function paintScreen(t) {
   });
   const end = ev => last.delete(ev.pointerId);
   c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
-  backBtn(() => show(themeScreen, t));
+  backBtn(() => show(homeScreen));
 }
 
 // =====================================================================
@@ -624,11 +628,11 @@ function diffScreen(t) {
     const d = diffs.find(d => !d.found && Math.hypot(d.cx - x, d.cy - y) < 17);
     if (!d) { SFX.no(); return; }
     d.found = true; SFX.ok(); draw();
-    if (diffs.every(d => d.found)) setTimeout(() => party('HAI TROVATO TUTTO!', () => show(diffScreen, t), () => show(themeScreen, t)), 700);
+    if (diffs.every(d => d.found)) setTimeout(() => party('HAI TROVATO TUTTO!', () => show(diffScreen, randomTheme()), () => show(homeScreen)), 700);
   }
   draw();
   if (items.concat(copy).some(o => isAnimated(o.e))) onAnim(draw);
-  backBtn(() => show(themeScreen, t));
+  backBtn(() => show(homeScreen));
 }
 
 // =====================================================================
@@ -771,7 +775,7 @@ function dressScreen(t) {
       a.className = 'btn blue';
     });
   });
-  backBtn(() => show(themeScreen, t));
+  backBtn(() => show(homeScreen));
   render();
 }
 
