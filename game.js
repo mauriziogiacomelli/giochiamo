@@ -78,6 +78,70 @@ const SFX = {
   win: () => snd([[523, .12], [659, .12], [784, .12], [1047, .25], [0, .06], [784, .1], [1047, .4]]),
 };
 
+// ---------- disegni fatti a mano (sostituiscono l'emoji) ----------
+// La giraffa fa la linguaccia! 32x32 pixel.
+const CUSTOM = {
+  '🦒': {
+    colors: { Y: '#ffc828', O: '#c86414', H: '#8b4513', E: '#e0a020', K: '#000000', W: '#ffffff',
+      M: '#ffe08a', N: '#5a280a', P: '#ff5a8c', R: '#c81e50' },
+    map: [
+      '................................',
+      '.........HH...HH................',
+      '.........HH...HH................',
+      '..........H....H................',
+      '..........Y....Y................',
+      '.......EE.YYYYYY................',
+      '......EEEYYYYYYYYYY.............',
+      '.......YYYYYOOYYYYYYY...........',
+      '.......YYYYOOOYYYKKYYYY.........',
+      '.......YYYYYOYYYYKWYYYYYY.......',
+      '.......YOOYYYYYYYYYYYYMMMMM.....',
+      '.......OOOYYYYYYYYYYYMMMMMMMM...',
+      '.......YOYYYYYYYYYYYYMMMMMNMMM..',
+      '.......YYYYYYYYYYYYYYMMMMMMMMM..',
+      '........YYYYOYYYYYYYYMKKKKKKKK..',
+      '........YYYOOOYYYYYYYYMMMPPPPPP.',
+      '........YYYYOYYYYYYYYYYYMPPRRPPP',
+      '.........YYYYYYYYYYYY.....PPRPP.',
+      '.........YYYYYYYYYYY.......PPP..',
+      '........HYYOOYYYYYY.............',
+      '........HYOOOYYYYY..............',
+      '........HYYOYYYYYY..............',
+      '........HYYYYYOYYY..............',
+      '........HYYYYOOOYY..............',
+      '........HYOYYYOYYY..............',
+      '........HOOOYYYYYY..............',
+      '........HYOYYYYYYY..............',
+      '........HYYYYOYYYY..............',
+      '........YYYYYOOOYYY.............',
+      '.......YYYYYYYOYYYYY............',
+      '......YYOOYYYYYYYOOYY...........',
+      '......YYYYYYYYYYYYYYY...........',
+    ],
+  },
+};
+const customCache = new Map();
+function customCanvas(emoji) {
+  if (customCache.has(emoji)) return customCache.get(emoji);
+  const { map, colors } = CUSTOM[emoji];
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const x = c.getContext('2d');
+  map.forEach((row, y) => [...row].forEach((ch, xx) => { if (colors[ch]) { x.fillStyle = colors[ch]; x.fillRect(xx, y, 1, 1); } }));
+  customCache.set(emoji, c);
+  return c;
+}
+// disegna un soggetto (emoji o disegno personalizzato) riempiendo un canvas res x res
+function drawSubject(x, emoji, res, scale) {
+  if (CUSTOM[emoji]) {
+    x.imageSmoothingEnabled = false;
+    x.drawImage(customCanvas(emoji), 0, 0, res, res);
+    return;
+  }
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = `${Math.round(res * scale)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+  x.fillText(emoji, res / 2, res / 2 + res * 0.06);
+}
+
 // ---------- sprite pixel-art dagli emoji ----------
 const spriteCache = new Map();
 function sprite(emoji, res = 32) {
@@ -85,9 +149,7 @@ function sprite(emoji, res = 32) {
   if (spriteCache.has(key)) return spriteCache.get(key);
   const c = document.createElement('canvas'); c.width = c.height = res;
   const x = c.getContext('2d');
-  x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.font = `${Math.round(res * 0.78)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-  x.fillText(emoji, res / 2, res / 2 + res * 0.06);
+  drawSubject(x, emoji, res, 0.78);
   const im = x.getImageData(0, 0, res, res), d = im.data;
   const solid = new Uint8Array(res * res);
   for (let i = 0; i < res * res; i++) {
@@ -312,9 +374,7 @@ function memoryScreen(t, nCards) {
 function lineArt(emoji, res) {
   const c = document.createElement('canvas'); c.width = c.height = res;
   const x = c.getContext('2d');
-  x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.font = `${Math.round(res * 0.8)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-  x.fillText(emoji, res / 2, res / 2 + res * 0.06);
+  drawSubject(x, emoji, res, 0.8);
   const src = x.getImageData(0, 0, res, res).data;
   const out = x.createImageData(res, res), d = out.data;
   const op = i => src[i * 4 + 3] > 120;
