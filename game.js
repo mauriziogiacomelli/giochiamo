@@ -536,6 +536,20 @@ function homeScreen() {
   fs.className = 'btn blue';
   const mu = tap(el('div', { left: '724px', top: '700px', width: '170px', height: '54px', fontSize: '24px' }, stage, '🎵 Musica'), () => { SFX.tap(); musicPicker(); });
   mu.className = 'btn';
+  // ricarica: con internet prende l'ultima versione del gioco, senza internet ricarica e basta
+  const rl = tap(el('div', { left: '20px', top: '700px', width: '190px', height: '54px', fontSize: '24px' }, stage, '↻ Ricarica'), async () => {
+    SFX.tap();
+    rl.textContent = '⏳ ...';
+    try {
+      if (navigator.onLine) {
+        const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.update();
+        if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+      }
+    } catch (e) { /* si ricarica comunque */ }
+    location.reload();
+  });
+  rl.className = 'btn green';
 }
 
 // =====================================================================
