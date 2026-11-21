@@ -910,8 +910,54 @@ const ART = (() => {
   };
 })();
 
+// Contorni puliti ricavati dall'emoji: zone di colore simile (k-means sulla tinta) -> bordi sempre chiusi
+function lineArtClean(emoji, res, K = 5, LW = 0.3) {
+  const c = document.createElement('canvas'); c.width = c.height = res;
+  const x = c.getContext('2d');
+  drawSubject(x, emoji, res, 0.8);
+  const src = x.getImageData(0, 0, res, res).data;
+  const N = res * res, lab = new Int16Array(N).fill(-1), px = [], F = new Float32Array(N * 3), Y = new Float32Array(N);
+  for (let i = 0; i < N; i++) if (src[i * 4 + 3] > 120) {
+    px.push(i); const r = src[i * 4], g = src[i * 4 + 1], b = src[i * 4 + 2], y = 0.299 * r + 0.587 * g + 0.114 * b;
+    Y[i] = y; F[i * 3] = y * LW; F[i * 3 + 1] = (b - y) * 0.564; F[i * 3 + 2] = (r - y) * 0.713;
+  }
+  if (!px.length) return x.createImageData(res, res);
+  const dist = (i, c0) => (F[i * 3] - c0[0]) ** 2 + (F[i * 3 + 1] - c0[1]) ** 2 + (F[i * 3 + 2] - c0[2]) ** 2;
+  let cent = [[F[px[0] * 3], F[px[0] * 3 + 1], F[px[0] * 3 + 2]]];
+  while (cent.length < K) {   // centri il più possibile diversi
+    let bi = px[0], bd = -1;
+    for (const i of px) { let m = 1e9; for (const c0 of cent) m = Math.min(m, dist(i, c0)); if (m > bd) { bd = m; bi = i; } }
+    cent.push([F[bi * 3], F[bi * 3 + 1], F[bi * 3 + 2]]);
+  }
+  for (let it = 0; it < 12; it++) {
+    const sum = cent.map(() => [0, 0, 0, 0]);
+    for (const i of px) { let b = 0, bd = 1e9; for (let k = 0; k < K; k++) { const d = dist(i, cent[k]); if (d < bd) { bd = d; b = k; } } lab[i] = b; const q = sum[b]; q[0] += F[i * 3]; q[1] += F[i * 3 + 1]; q[2] += F[i * 3 + 2]; q[3]++; }
+    cent = cent.map((c0, k) => sum[k][3] ? [sum[k][0] / sum[k][3], sum[k][1] / sum[k][3], sum[k][2] / sum[k][3]] : c0);
+  }
+  for (const i of px) if (Y[i] < 55) lab[i] = -2;   // tratti scuri dell'emoji = linee
+  for (let pass = 0; pass < 2; pass++) {             // via i puntini: filtro di maggioranza
+    const nl = lab.slice();
+    for (let y = 1; y < res - 1; y++) for (let xx = 1; xx < res - 1; xx++) {
+      const i = y * res + xx; if (lab[i] === -1) continue;
+      const cnt = {}; let best = lab[i], bc = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const l = lab[i + dy * res + dx]; if (l === -1) continue; cnt[l] = (cnt[l] || 0) + 1; if (cnt[l] > bc) { bc = cnt[l]; best = l; } }
+      if (bc >= 5) nl[i] = best;
+    }
+    lab.set(nl);
+  }
+  const out = x.createImageData(res, res), d = out.data;
+  for (let y = 0; y < res; y++) for (let xx = 0; xx < res; xx++) {
+    const i = y * res + xx, l = lab[i]; let black = false;
+    if (l === -2) black = true;
+    else if (l >= 0) black = (xx < res - 1 && lab[i + 1] !== l && lab[i + 1] !== -2) || (y < res - 1 && lab[i + res] !== l && lab[i + res] !== -2);
+    else black = (xx > 0 && lab[i - 1] !== -1) || (xx < res - 1 && lab[i + 1] !== -1) || (y > 0 && lab[i - res] !== -1) || (y < res - 1 && lab[i + res] !== -1);
+    const v = black ? 0 : 255; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255;
+  }
+  return out;
+}
 function lineArt(emoji, res) {
-  if (ART[emoji]) {
+  // la farfalla resta quella disegnata a mano (piaceva così)
+  if (emoji === '🦋' && ART[emoji]) {
     const c = document.createElement('canvas'); c.width = c.height = res;
     const x = c.getContext('2d');
     x.fillStyle = '#fff'; x.fillRect(0, 0, res, res);
@@ -923,6 +969,8 @@ function lineArt(emoji, res) {
     for (let i = 0; i < d.length; i += 4) { const v = (d[i] + d[i + 1] + d[i + 2]) / 3 < 150 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
     return im;
   }
+  // fiori e fantasia: il disegno nasce dall'emoji dell'iconcina, con il metodo dei contorni puliti
+  if (THEMES.some(t => (t.id === 'fiori' || t.id === 'fantasia') && t.items.includes(emoji))) return lineArtClean(emoji, res);
   const c = document.createElement('canvas'); c.width = c.height = res;
   const x = c.getContext('2d');
   drawSubject(x, emoji, res, 0.8);
@@ -987,8 +1035,7 @@ function colorScreen(t, pic = 0) {
     const [cx, cy] = canvasPos(c, ev);
     if (floodFill(img, cx, cy, hex2rgb(cur))) {
       x.putImageData(img, 0, 0); SFX.fill();
-      const url = c.toDataURL(); store(keyOf(t.items[pic]), url);
-      if (thumbs[pic]) thumbs[pic].src = url;
+      store(keyOf(t.items[pic]), c.toDataURL());
     }
   });
   // tavolozza
@@ -1000,16 +1047,11 @@ function colorScreen(t, pic = 0) {
     tap(s, () => { cur = col; sws.forEach(q => q.classList.remove('sel')); s.classList.add('sel'); SFX.tap(); });
   });
   // scelta del disegno
-  const thumbs = [];
   t.items.forEach((e, i) => {
     const b = el('div', { left: px(800 + (i % 2) * 104), top: px(22 + Math.floor(i / 2) * 118), width: '96px', height: '106px',
       background: i === pic ? '#ffe81a' : '#fff', border: '4px solid #222', boxSizing: 'border-box', cursor: 'pointer' });
     b.className = 'sw';
-    // iconcina = proprio il disegno da colorare (con i colori già messi, se c'è)
-    let url = store(keyOf(e));
-    if (!url) { const k = document.createElement('canvas'); k.width = k.height = RES; k.getContext('2d').putImageData(lineArt(e, RES), 0, 0); url = k.toDataURL(); }
-    const im = el('img', { width: '80px', height: '80px', margin: '9px 4px' }, b); im.className = 'px'; im.src = url; im.draggable = false;
-    thumbs[i] = im;
+    spriteImg(e, 80, b, { margin: '9px 4px' });
     tap(b, () => { SFX.flip(); show(colorScreen, t, i); });
   });
   backBtn(() => show(themePick, colorScreen));
