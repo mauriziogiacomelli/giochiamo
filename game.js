@@ -1286,7 +1286,7 @@ function dollSVG(S, vb = '0 0 400 600', id = 'd') {
   };
   if (boy) {
     if (FRONT_M[hair]) s += P('capelli', FRONT_M[hair], H);
-    if (hair === 'ciuffo') s += P('capelli', 'M160,90 C176,40 262,34 278,86 C250,66 200,68 160,90 Z', H);
+    if (hair === 'ciuffo') s += P('capelli', 'M128,112 C140,56 236,40 286,70 C300,80 296,100 280,104 C250,80 196,84 128,112 Z', H);
     if (hair === 'riccioli') [[128, 132], [160, 110], [200, 102], [240, 110], [272, 132]].forEach(([cx, cy]) => { s += E('capelli', cx, cy, 23, 23, H); });
   } else if (hair === 'caschetto') s += P('capelli', 'M106,190 C98,78 302,78 294,190 C290,160 280,140 270,132 L130,132 C120,140 110,160 106,190 Z', H);
   else s += P('capelli', 'M108,188 C98,80 302,80 292,188 C284,152 268,128 246,122 C238,142 218,150 200,140 C182,152 160,148 152,126 C130,135 114,160 108,188 Z', H);
@@ -1303,8 +1303,8 @@ function dollSVG(S, vb = '0 0 400 600', id = 'd') {
   if (ac === 'cerchietto') s += `<path data-part="accessori" d="M110,160 C126,62 274,62 290,160" fill="none" stroke="${line(ca)}" stroke-width="18" stroke-linecap="round"/>` +
     `<path data-part="accessori" d="M110,160 C126,62 274,62 290,160" fill="none" stroke="${ca}" stroke-width="12" stroke-linecap="round"/>` +
     [0, 72, 144, 216, 288].map(a => E('accessori', 252 + 12 * Math.cos(a * Math.PI / 180), 88 + 12 * Math.sin(a * Math.PI / 180), 8, 8, '#fff')).join('') + E('accessori', 252, 88, 6, 6, '#ffd23f');
-  if (ac === 'cappellino') s += P('accessori', 'M112,148 C110,58 290,58 288,148 Z', ca) +
-    P('accessori', 'M106,146 Q200,190 294,146 Q200,162 106,146 Z', shade(ca, -.12)) + E('accessori', 200, 64, 9, 6, shade(ca, -.15));
+  if (ac === 'cappellino') s += P('accessori', 'M110,148 C108,70 292,70 290,148 Z', ca) +
+    P('accessori', 'M96,142 Q200,206 304,142 Q200,168 96,142 Z', shade(ca, -.12)) + E('accessori', 200, 76, 9, 6, shade(ca, -.15));
   if (ac === 'occhiali') s += `<rect data-part="accessori" x="136" y="174" width="54" height="40" rx="14" fill="#2b2d42" fill-opacity=".88" stroke="${ca}" stroke-width="6"/>` +
     `<rect data-part="accessori" x="210" y="174" width="54" height="40" rx="14" fill="#2b2d42" fill-opacity=".88" stroke="${ca}" stroke-width="6"/>` +
     `<path data-part="accessori" d="M190,190 Q200,182 210,190" fill="none" stroke="${ca}" stroke-width="6"/>` +
@@ -1388,7 +1388,7 @@ function dressScreen() {
         t.className = 'm-thumb' + (S.style[cat] === i ? ' on' : '');
         const preview = { g: S.g, style: Object.assign({}, S.style, { [cat]: i }), color: S.color };
         if (cat === 'scarpe') preview.style.sotto = S.g === 'm' ? 2 : 3;   // nelle anteprime le scarpe si vedono bene
-        t.innerHTML = dollSVG(preview, DOLL.crop[cat], 't' + cat + i);
+        t.innerHTML = dollSVG(preview, cat === 'sotto' && S.g === 'm' ? '86 286 228 294' : DOLL.crop[cat], 't' + cat + i);
         tap(t, () => { S.style[cat] = i; SFX.flip(); drawDoll(true); drawPanel(); });
       });
       y += Math.ceil(c.styles.length / 3) * 148 + 8;
@@ -1564,7 +1564,7 @@ function seekScreen(sc) {
   }
   const targets = shuffle(placed.slice()).slice(0, N).map(o => Object.assign(o, { found: false,
     // il "particolare": un pezzetto della scena intorno all'oggetto, un po' spostato
-    vx: o.x - 70 + rnd(30) - 15, vy: o.y - 70 + rnd(30) - 15 }));
+    vx: Math.max(0, Math.min(W0 - 140, o.x - 70 + rnd(30) - 15)), vy: Math.max(0, Math.min(H0 - 140, o.y - 70 + rnd(30) - 15)) }));
   const shadow = `<filter id="sk-sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".25"/></filter>`;
   const content = sc.bg().replace('<defs>', '<defs>' + shadow) +
     placed.map(o => `<text x="${o.x}" y="${o.y}" font-size="${o.size}" text-anchor="middle" dominant-baseline="central" filter="url(#sk-sh)" transform="rotate(${o.rot} ${o.x} ${o.y})">${o.e}</text>`).join('');
