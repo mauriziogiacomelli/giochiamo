@@ -96,11 +96,15 @@
   .mpop { animation: mpop .28s ease; }
   @keyframes twinkle { 0%,100% { opacity: .15; transform: scale(.6) rotate(0); } 50% { opacity: 1; transform: scale(1) rotate(20deg); } }
   .twinkle { position: absolute; pointer-events: none; animation: twinkle 2.4s ease-in-out infinite; }
+  .sk-hit { transform-box: fill-box; transform-origin: center; animation: skpop .45s ease; }
+  .sk-miss { animation: skfade .7s ease forwards; }
+  @keyframes skpop { from { transform: scale(.2); opacity: 0; } 70% { transform: scale(1.15); } }
+  @keyframes skfade { to { opacity: 0; } }
 </style>
 </head>
 <body>
 <div id="stage"></div>
-<script src="game.js?v=20"></script>
+<script src="game.js?v=21"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
