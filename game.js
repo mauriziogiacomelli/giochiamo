@@ -722,8 +722,8 @@ function dollSVG(S, vb = '0 0 400 600', id = 'd') {
   }
   if (bo === 'pantaloni') s += P('sotto', 'M160,364 L240,364 L244,540 L207,540 L200,420 L193,540 L156,540 Z', cb);
   if (bo === 'pantaloncini') s += P('sotto', 'M160,364 L240,364 L248,430 L207,430 L200,402 L193,430 L152,430 Z', cb);
-  if (bo === 'vestito lungo') s += P('sotto', 'M160,356 L240,356 L292,536 Q200,560 108,536 Z', cb) +
-    `<path d="M140,500 Q200,520 260,500" fill="none" stroke="${shade(cb, .45)}" stroke-width="6" stroke-linecap="round"/>`;
+  if (bo === 'vestito lungo') s += P('sotto', 'M160,356 L240,356 L286,498 Q200,520 114,498 Z', cb) +
+    `<path d="M134,468 Q200,486 266,468" fill="none" stroke="${shade(cb, .45)}" stroke-width="6" stroke-linecap="round"/>`;
 
   // --- braccia ---
   s += limb('M158,292 C140,330 132,360 130,390', 24) + limb('M242,292 C260,330 268,360 270,390', 24);
@@ -847,6 +847,7 @@ function dressScreen() {
         const t = el('div', { left: px(24 + (i % 3) * 148), top: px(y + Math.floor(i / 3) * 148), width: '136px', height: '136px' }, body);
         t.className = 'm-thumb' + (S.style[cat] === i ? ' on' : '');
         const preview = { style: Object.assign({}, S.style, { [cat]: i }), color: S.color };
+        if (cat === 'scarpe') preview.style.sotto = 3;   // nelle anteprime le scarpe si vedono bene
         t.innerHTML = dollSVG(preview, DOLL.crop[cat], 't' + cat + i);
         tap(t, () => { S.style[cat] = i; SFX.flip(); drawDoll(true); drawPanel(); });
       });
