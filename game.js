@@ -975,9 +975,21 @@ function colorScreen(t, pic = 0) {
   const x = c.getContext('2d');
   const img = lineArt(t.items[pic], RES);
   x.putImageData(img, 0, 0);
+  // il disegno colorato resta salvato (e si vede nell'iconcina)
+  const keyOf = e => 'retroCol-' + t.id + '-' + e;
+  const saved = store(keyOf(t.items[pic]));
+  if (saved) {
+    const im = new Image();
+    im.onload = () => { x.drawImage(im, 0, 0); img.data.set(x.getImageData(0, 0, RES, RES).data); };
+    im.src = saved;
+  }
   tap(c, ev => {
     const [cx, cy] = canvasPos(c, ev);
-    if (floodFill(img, cx, cy, hex2rgb(cur))) { x.putImageData(img, 0, 0); SFX.fill(); }
+    if (floodFill(img, cx, cy, hex2rgb(cur))) {
+      x.putImageData(img, 0, 0); SFX.fill();
+      const url = c.toDataURL(); store(keyOf(t.items[pic]), url);
+      if (thumbs[pic]) thumbs[pic].src = url;
+    }
   });
   // tavolozza
   const sws = [];
@@ -988,15 +1000,20 @@ function colorScreen(t, pic = 0) {
     tap(s, () => { cur = col; sws.forEach(q => q.classList.remove('sel')); s.classList.add('sel'); SFX.tap(); });
   });
   // scelta del disegno
+  const thumbs = [];
   t.items.forEach((e, i) => {
     const b = el('div', { left: px(800 + (i % 2) * 104), top: px(22 + Math.floor(i / 2) * 118), width: '96px', height: '106px',
       background: i === pic ? '#ffe81a' : '#fff', border: '4px solid #222', boxSizing: 'border-box', cursor: 'pointer' });
     b.className = 'sw';
-    spriteImg(e, 80, b, { margin: '9px 4px' });
+    // iconcina = proprio il disegno da colorare (con i colori già messi, se c'è)
+    let url = store(keyOf(e));
+    if (!url) { const k = document.createElement('canvas'); k.width = k.height = RES; k.getContext('2d').putImageData(lineArt(e, RES), 0, 0); url = k.toDataURL(); }
+    const im = el('img', { width: '80px', height: '80px', margin: '9px 4px' }, b); im.className = 'px'; im.src = url; im.draggable = false;
+    thumbs[i] = im;
     tap(b, () => { SFX.flip(); show(colorScreen, t, i); });
   });
   backBtn(() => show(themePick, colorScreen));
-  const r = tap(el('div', { left: '330px', top: '696px', width: '270px', height: '60px' }, stage, '↻ Ricomincia'), () => { SFX.tap(); show(colorScreen, t, pic); });
+  const r = tap(el('div', { left: '330px', top: '696px', width: '270px', height: '60px' }, stage, '↻ Ricomincia'), () => { SFX.tap(); try { localStorage.removeItem(keyOf(t.items[pic])); } catch (e) {} show(colorScreen, t, pic); });
   r.className = 'btn blue';
   const s = tap(el('div', { left: '620px', top: '696px', width: '160px', height: '60px' }, stage, '💾 Salva'), () => { SFX.tap(); saveCanvas(c, 'colorato', 12); });
   s.className = 'btn green';
