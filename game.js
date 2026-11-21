@@ -1752,7 +1752,7 @@ function diffScreen(sc) {
   const candidates = shuffle(placed.slice());
   const copy = placed.map(o => Object.assign({}, o));
   const diffs = [];
-  for (const type of types) {
+  for (let type of types) {
     if (type === 'add') {
       const [e, z] = sc.items[rnd(sc.items.length)], size = L.min + rnd(L.var), p = spot(z, size);
       if (!p) continue;
@@ -1765,7 +1765,8 @@ function diffScreen(sc) {
       '👟', '🖍️', '🎈', '⛱️', '👒', '🍦', '⏰', '📚', '🎨', '🍎', '🧦', '🌙', '👩‍🚀', '🖼️']);
     const sym = new Set(['⚽', '🍄', '🐰', '🌻', '🐞', '🌍', '⭐', '🌟', '🪐', '👽', '🎁', '🏐', '🏰', '🌈', '🧸', '📖', '🛸', '🦀', '🐙', '🪀', '🐚']);
     const ok = o => !o.used && (type !== 'hue' || !pale.has(o.e)) && (type !== 'flip' || (asym.has(o.e) && !sym.has(o.e)));
-    const i = candidates.findIndex(ok);
+    let i = candidates.findIndex(ok);
+    if (i < 0) { i = candidates.findIndex(o => !o.used); type = 'size'; }   // nessun oggetto adatto: diventa "più grande"
     if (i < 0) continue;
     const o = candidates[i]; o.used = true;
     const c = copy[placed.indexOf(o)];
