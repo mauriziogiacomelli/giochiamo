@@ -15,7 +15,7 @@ const EN = {
   'Onde del mare': 'Ocean waves', 'Nuvole': 'Clouds', 'Silenzio': 'Silence', 'Fatto': 'Done', 'Musica': 'Music',
   'Indietro': 'Back', 'Ancora!': 'Again!', 'Ricarica': 'Reload', 'Chiudi': 'Close', 'Ciao ciao!': 'Bye bye!',
   "Per uscire usa il tasto Home<br>o scorri verso l'alto dal basso.": 'To exit, press the Home button<br>or swipe up from the bottom.',
-  'Resta': 'Stay', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
+  'Resta': 'Stay', 'Annulla': 'Undo', 'Gomma': 'Eraser', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
   'MODELLO': 'ORIGINAL', 'COPIA': 'COPY', 'Originale': 'Original', 'Copia': 'Copy', 'Trovate:': 'Found:', 'BRAVISSIMA!': 'WELL DONE!', 'HAI TROVATO TUTTO!': 'YOU FOUND THEM ALL!',
   'Gonna e pantaloni': 'Skirts & pants', 'Capelli': 'Hair', 'Accessori': 'Accessories', 'Maglia': 'Tops', 'Pantaloni': 'Pants',
   'Scarpe': 'Shoes', 'Occhiali': 'Glasses', 'Occhi': 'Eyes', 'Pelle': 'Skin', 'Colori': 'Colors', 'Bambina': 'Girl', 'Bambino': 'Boy',
@@ -522,7 +522,7 @@ const randomTheme = () => THEMES[rnd(THEMES.length)];
 // =====================================================================
 const GAMES = [
   { name: 'Memory', icon: null, x: 80, y: 110, go: () => show(themePick, memoryScreen) },
-  { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 100, go: () => show(themePick, colorScreen) },
+  { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 100, go: () => show(colorModern) },
   { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 110, go: () => show(paintScreen, MIX) },
   { name: 'Trova le differenze', icon: '🔍', x: 80, y: 404, go: () => show(diffPick) },
   { name: 'Gioco dei vestiti', icon: '👗', x: 392, y: 394, go: () => show(dressScreen) },
@@ -1882,6 +1882,223 @@ function diffScreen(sc) {
   const again = tap(el('div', { left: '786px', top: '612px', width: '230px', height: '128px', fontSize: '28px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(diffScreen, sc); });
   again.className = 'm-btn primary';
   const back = tap(el('div', { left: '8px', top: '612px', width: '230px', height: '128px', fontSize: '28px' }, stage, '← Indietro'), () => { SFX.tap(); show(diffPick); });
+  back.className = 'm-btn';
+}
+
+// =====================================================================
+//  COLORARE DISEGNI (grafica moderna, disegni vettoriali)
+// =====================================================================
+// Mattoncini per i disegni (viewBox 400x400). k: 'f' = zona da colorare, 'l' = linea, 'd' = dettaglio scuro, 'w' = riflesso
+const _sh = (k, tag, a) => ({ k, tag, a });
+const cC = (cx, cy, r) => _sh('f', 'circle', { cx, cy, r });
+const cE = (cx, cy, rx, ry, rot = 0) => _sh('f', 'ellipse', { cx, cy, rx, ry, transform: rot ? `rotate(${rot.toFixed(1)} ${cx} ${cy})` : '' });
+const cR = (x, y, w, h, rx = 0) => _sh('f', 'rect', { x, y, width: w, height: h, rx });
+const cP = d => _sh('f', 'path', { d });
+const cL = d => _sh('l', 'path', { d });
+const cD = it => (it.k = 'd', it);
+const cW = it => (it.k = 'w', it);
+const cEye = (x, y, r) => [cD(cC(x, y, r)), cW(cC(x - r * 0.35, y - r * 0.38, r * 0.36))];
+const cStar = (cx, cy, R, r, n = 5) => {
+  let d = ''; for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n, q = i % 2 ? r : R; d += (i ? 'L' : 'M') + (cx + Math.cos(a) * q).toFixed(1) + ',' + (cy + Math.sin(a) * q).toFixed(1); }
+  return cP(d + 'Z');
+};
+const ring = (cx, cy, R, n, r, a0 = 0) => [...Array(n)].map((_, i) => { const a = a0 + i * Math.PI * 2 / n; return cC(+(cx + Math.cos(a) * R).toFixed(1), +(cy + Math.sin(a) * R).toFixed(1), r); });
+
+// fiori: stesse forme dei vecchi disegni, scalate da 64 a 400
+const K = 6.25;
+const fE = (cx, cy, rx, ry, rot = 0) => cE(+(cx * K).toFixed(1), +(cy * K).toFixed(1), +(rx * K).toFixed(1), +(ry * K).toFixed(1), rot * 180 / Math.PI);
+const fStem = (cx, y0, y1) => cR(+((cx - 1.8) * K).toFixed(1), y0 * K, 3.6 * K, (y1 - y0) * K, 8);
+const fLeaf = (sx, sy, dir, len = 16) => { const q = v => (v * K).toFixed(1);
+  return cP(`M${q(sx)},${q(sy)} Q${q(sx + dir * len * .8)},${q(sy - len * .75)} ${q(sx + dir * len)},${q(sy - 2)} Q${q(sx + dir * len * .55)},${q(sy + len * .35)} ${q(sx)},${q(sy)} Z`); };
+const fSmall = (cx, cy, r) => [...[0, 1, 2, 3, 4].map(i => { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; return fE(cx + Math.cos(a) * r, cy + Math.sin(a) * r, r * .8, r * .8); }), fE(cx, cy, r * .6, r * .6)];
+
+const COLOR_SETS = [
+  { id: 'fattoria', icon: '🐄', pics: [
+    { id: 'mucca', f: () => [cE(95, 150, 42, 22, -25), cE(305, 150, 42, 22, 25), cP('M140,98 Q118,62 133,42 Q150,70 162,96 Z'), cP('M260,98 Q282,62 267,42 Q250,70 238,96 Z'),
+      cE(200, 200, 110, 100), cE(150, 160, 32, 26, -10), cE(258, 150, 28, 22, 15), cE(200, 272, 85, 55), cD(cE(170, 270, 10, 15)), cD(cE(230, 270, 10, 15)),
+      ...cEye(160, 200, 13), ...cEye(240, 200, 13), cR(140, 334, 120, 20, 10), cC(200, 368, 22), cL('M190,370 h20')] },
+    { id: 'maiale', f: () => [cP('M112,122 L95,45 L168,96 Z'), cP('M288,122 L305,45 L232,96 Z'), cC(200, 210, 125), cE(125, 252, 24, 15), cE(275, 252, 24, 15),
+      cE(200, 245, 58, 42), cD(cE(182, 245, 9, 14)), cD(cE(218, 245, 9, 14)), ...cEye(155, 185, 13), ...cEye(245, 185, 13), cL('M175,308 Q200,326 225,308')] },
+    { id: 'gallina', f: () => [cP('M98,232 Q40,170 70,128 Q92,180 116,190 Q80,140 110,108 Q126,170 142,192 Z'), cE(195, 255, 110, 85),
+      cP('M150,245 Q200,215 245,250 Q215,300 165,290 Q140,270 150,245 Z'), cP('M252,112 Q255,80 274,98 Q282,68 298,94 Q314,72 320,110 Z'), cC(285, 150, 50),
+      cP('M330,146 L368,160 L330,174 Z'), cE(318, 197, 10, 18), ...cEye(298, 140, 9), cL('M175,335 L170,378 M158,378 h24 M222,335 L227,378 M215,378 h24')] },
+    { id: 'pecora', f: () => [cR(140, 300, 26, 72, 10), cR(234, 300, 26, 72, 10), ...ring(200, 240, 100, 11, 46), cE(200, 240, 115, 80),
+      cE(95, 175, 30, 16, -30), cE(305, 175, 30, 16, 30), cE(200, 190, 60, 72), ...cEye(178, 182, 10), ...cEye(222, 182, 10), cD(cE(200, 228, 14, 9)), cL('M188,246 Q200,256 212,246')] },
+    { id: 'trattore', f: () => [cR(112, 138, 16, 56, 5), cR(80, 188, 200, 94, 14), cR(200, 92, 100, 126, 10), cR(220, 112, 58, 62, 6), cR(56, 230, 30, 40, 8),
+      cC(135, 300, 72), cC(135, 300, 26), cC(300, 318, 52), cC(300, 318, 18), cL('M20,374 H380')] },
+  ] },
+  { id: 'veicoli', icon: '🚗', pics: [
+    { id: 'macchina', f: () => [cP('M60,270 Q60,230 95,225 L130,225 L165,165 Q175,150 195,150 L270,150 Q290,150 300,170 L325,225 L345,228 Q370,232 370,262 L370,290 Q370,300 360,300 L70,300 Q60,300 60,290 Z'),
+      cP('M180,172 L154,222 L232,222 L232,172 Z'), cP('M248,172 L248,222 L314,222 L292,172 Z'), cC(130, 300, 42), cC(130, 300, 16), cC(300, 300, 42), cC(300, 300, 16),
+      cC(352, 252, 11), cR(64, 248, 22, 16, 5), cL('M240,232 V292 M216,246 h18')] },
+    { id: 'autobus', f: () => [cR(40, 110, 320, 190, 26), cR(40, 246, 320, 24), cR(60, 135, 60, 62, 8), cR(132, 135, 60, 62, 8), cR(204, 135, 60, 62, 8), cR(284, 135, 56, 135, 8),
+      cC(115, 305, 36), cC(115, 305, 13), cC(290, 305, 36), cC(290, 305, 13), cC(352, 282, 8)] },
+    { id: 'aereo', f: () => [cP('M72,182 L40,96 L96,102 L132,182 Z'), cP('M190,190 L150,118 L190,114 L245,186 Z'), cE(205, 205, 155, 42), cP('M318,185 Q346,186 357,203 L318,203 Z'),
+      cC(150, 202, 9), cC(185, 202, 9), cC(220, 202, 9), cC(255, 202, 9), cP('M180,215 L252,215 L202,302 L158,302 Z'), cP('M58,206 L112,210 L82,242 L54,236 Z')] },
+    { id: 'barca', f: () => [cL('M20,362 q30,-18 60,0 t60,0 t60,0 t60,0 t60,0 t60,0'), cR(195, 68, 10, 212, 4), cP('M211,80 L211,265 L322,265 Z'), cP('M189,96 L189,265 L94,265 Z'),
+      cP('M205,68 L205,36 L248,52 Z'), cP('M58,280 L342,280 L302,340 L98,340 Z'), cC(140, 310, 10), cC(200, 310, 10), cC(260, 310, 10)] },
+    { id: 'treno', f: () => [cC(112, 88, 22), cC(142, 62, 28), cC(184, 42, 32), cR(95, 106, 40, 70, 8), cR(70, 170, 190, 110, 16), cR(230, 108, 120, 172, 12), cR(256, 134, 70, 60, 8),
+      cP('M28,302 L70,250 L70,302 Z'), cR(58, 278, 300, 26, 8), cC(110, 322, 32), cC(110, 322, 11), cC(200, 322, 32), cC(200, 322, 11), cC(300, 322, 32), cC(300, 322, 11)] },
+  ] },
+  { id: 'frutta', icon: '🍎', pics: [
+    { id: 'mela', f: () => [cR(193, 70, 14, 58, 6), cP('M207,96 Q250,55 292,75 Q256,116 207,96 Z'),
+      cP('M200,125 C150,95 75,115 75,205 C75,300 145,365 200,340 C255,365 325,300 325,205 C325,115 250,95 200,125 Z'), cW(cE(130, 190, 14, 26, 20))] },
+    { id: 'pera', f: () => [cR(194, 42, 12, 52, 5), cP('M206,68 Q245,38 276,56 Q246,94 206,68 Z'),
+      cP('M200,90 C170,90 160,130 160,165 C160,195 105,220 105,290 C105,350 160,375 200,375 C240,375 295,350 295,290 C295,220 240,195 240,165 C240,130 230,90 200,90 Z'), cW(cE(150, 290, 12, 24, 15))] },
+    { id: 'fragola', f: () => [cP('M200,362 C120,332 70,242 85,172 C95,130 150,120 200,135 C250,120 305,130 315,172 C330,242 280,332 200,362 Z'),
+      cP('M200,145 L118,118 L168,110 L152,72 L192,100 L200,58 L208,100 L248,72 L232,110 L282,118 Z'),
+      ...[[150, 180], [200, 175], [250, 180], [125, 230], [175, 225], [225, 225], [275, 230], [150, 275], [200, 270], [250, 275], [175, 318], [225, 318]].map(([x, y]) => cD(cE(x, y, 5, 8)))] },
+    { id: 'uva', f: () => [cR(195, 48, 10, 54, 4), cP('M205,78 Q262,38 302,68 Q272,120 205,78 Z'),
+      ...[[150, 112], [200, 112], [250, 112], [125, 160], [175, 160], [225, 160], [275, 160], [150, 208], [200, 208], [250, 208], [175, 256], [225, 256], [200, 302]].map(([x, y]) => cC(x, y, 29))] },
+    { id: 'anguria', f: () => [cP('M40,150 A160,160 0 0 0 360,150 Z'), cP('M58,150 A142,142 0 0 0 342,150 Z'), cP('M74,150 A126,126 0 0 0 326,150 Z'),
+      ...[[140, 190], [200, 205], [260, 190], [170, 240], [230, 240], [200, 270]].map(([x, y]) => cD(cE(x, y, 6, 10)))] },
+  ] },
+  { id: 'spazio', icon: '🚀', pics: [
+    { id: 'razzo', f: () => [cP('M165,298 Q200,392 235,298 Z'), cP('M182,298 Q200,355 218,298 Z'), cP('M152,218 L94,302 L152,290 Z'), cP('M248,218 L306,302 L248,290 Z'),
+      cP('M200,40 C255,90 265,170 250,300 L150,300 C135,170 145,90 200,40 Z'), cP('M200,40 C228,65 242,95 247,120 L153,120 C158,95 172,65 200,40 Z'),
+      cC(200, 186, 34), cC(200, 186, 22), cW(cC(191, 176, 7)), cP('M193,250 L207,250 L210,322 L190,322 Z')] },
+    { id: 'pianeta', f: () => [cStar(60, 70, 26, 11), cStar(340, 330, 22, 9), cStar(330, 70, 16, 7), cE(200, 210, 172, 44, -12), cE(200, 210, 128, 24, -12), cC(200, 200, 105),
+      cP('M64,250 Q200,312 338,170 L356,180 Q205,338 46,240 Z'), cC(160, 160, 16), cC(240, 220, 22), cC(176, 250, 11)] },
+    { id: 'astronauta', f: () => [cR(110, 172, 180, 140, 20), cR(80, 190, 50, 102, 24), cR(270, 190, 50, 102, 24), cR(140, 296, 52, 72, 16), cR(208, 296, 52, 72, 16),
+      cR(130, 180, 140, 132, 30), cR(128, 348, 68, 32, 12), cR(204, 348, 68, 32, 12), cC(105, 296, 22), cC(295, 296, 22), cR(170, 214, 60, 42, 8), cC(186, 235, 7), cC(214, 235, 7),
+      cC(200, 112, 80), cE(200, 118, 56, 44), cW(cE(178, 100, 14, 8, -20))] },
+    { id: 'disco', f: () => [cP('M150,268 L250,268 L305,382 L95,382 Z'), cE(200, 150, 82, 78), cE(200, 168, 38, 42), cL('M186,128 L176,98 M214,128 L224,98'), cC(176, 94, 8), cC(224, 94, 8),
+      cD(cE(186, 162, 8, 12)), cD(cE(214, 162, 8, 12)), cL('M186,186 Q200,198 214,186'), cE(200, 232, 172, 48), cE(200, 214, 112, 22),
+      cC(80, 240, 11), cC(140, 254, 11), cC(200, 260, 11), cC(260, 254, 11), cC(320, 240, 11)] },
+    { id: 'luna', f: () => [cP('M235,55 A150,150 0 1 0 335,305 A118,118 0 1 1 235,55 Z'), cStar(95, 90, 42, 18), cStar(325, 95, 28, 12), cStar(115, 330, 30, 13), cStar(310, 340, 22, 9),
+      cL('M170,190 Q182,200 194,190'), cL('M160,250 Q182,268 205,252')] },
+  ] },
+  { id: 'zoo', icon: '🦒', pics: [
+    { id: 'giraffa', f: () => [cP('M150,282 L138,398 L262,398 L250,282 Z'), cR(140, 52, 14, 60, 7), cR(246, 52, 14, 60, 7), cC(147, 48, 16), cC(253, 48, 16),
+      cE(108, 142, 42, 20, -20), cE(292, 142, 42, 20, 20), cE(200, 176, 95, 110), cE(155, 120, 18, 14), cE(250, 112, 14, 12), cE(128, 192, 12, 16), cE(272, 196, 16, 12),
+      cE(200, 265, 75, 50), cD(cE(178, 252, 7, 10)), cD(cE(222, 252, 7, 10)), ...cEye(165, 170, 15), ...cEye(235, 170, 15), cL('M160,288 Q200,302 240,288'),
+      cP('M182,292 Q182,346 200,346 Q218,346 218,292 Z'), cL('M200,300 V330'), cE(170, 356, 14, 18), cE(230, 336, 12, 15), cE(222, 384, 14, 10)] },
+    { id: 'leone', f: () => [...ring(200, 205, 112, 14, 44), cC(200, 205, 118), cC(122, 118, 30), cC(278, 118, 30), cC(200, 210, 98), cE(200, 258, 56, 40),
+      cP('M180,234 L220,234 L200,254 Z'), ...cEye(160, 192, 13), ...cEye(240, 192, 13), cL('M200,254 V266 M200,266 Q186,282 172,270 M200,266 Q214,282 228,270')] },
+    { id: 'elefante', f: () => [cE(85, 190, 75, 95, -10), cE(315, 190, 75, 95, 10), cE(85, 192, 45, 60, -10), cE(315, 192, 45, 60, 10), cC(200, 180, 100),
+      cP('M175,238 Q168,330 215,366 Q242,376 246,350 Q214,340 225,238 Z'), cP('M158,252 Q148,300 175,306 Q170,280 178,258 Z'), cP('M242,252 Q252,300 225,306 Q230,280 222,258 Z'),
+      ...cEye(160, 172, 11), ...cEye(240, 172, 11)] },
+    { id: 'pinguino', f: () => [cE(118, 240, 28, 72, 20), cE(282, 240, 28, 72, -20), cE(200, 215, 110, 150), cE(200, 248, 75, 112), cE(160, 366, 36, 16), cE(240, 366, 36, 16),
+      ...cEye(170, 140, 12), ...cEye(230, 140, 12), cP('M178,164 L222,164 L200,192 Z')] },
+    { id: 'scimmia', f: () => [cC(95, 190, 40), cC(305, 190, 40), cC(95, 190, 22), cC(305, 190, 22), cC(200, 190, 110),
+      cP('M200,122 C150,90 105,130 120,180 C95,230 130,300 200,300 C270,300 305,230 280,180 C295,130 250,90 200,122 Z'),
+      ...cEye(165, 175, 12), ...cEye(235, 175, 12), cD(cE(188, 225, 5, 7)), cD(cE(212, 225, 5, 7)), cL('M165,255 Q200,285 235,255')] },
+  ] },
+  { id: 'fiori', icon: '🌼', pics: [
+    { id: 'margherita', f: () => [fStem(32, 34, 63), fLeaf(32, 52, -1), fLeaf(32, 46, 1),
+      ...[...Array(10)].map((_, i) => { const a = i * Math.PI / 5; return fE(32 + Math.cos(a) * 12.5, 22 + Math.sin(a) * 12.5, 4.3, 8, a + Math.PI / 2); }), fE(32, 22, 7, 7)] },
+    { id: 'tulipano', f: () => [fStem(32, 36, 63), fLeaf(32, 58, -1, 18), fLeaf(32, 54, 1, 18),
+      cP('M112.5,75 L156.3,137.5 L200,50 L243.8,137.5 L287.5,75 Q300,225 200,243.8 Q100,225 112.5,75 Z'), cL('M156.3,137.5 Q162.5,212.5 200,243.8 M243.8,137.5 Q237.5,212.5 200,243.8')] },
+    { id: 'girasole', f: () => [fStem(32, 36, 63), fLeaf(32, 56, -1, 18), fLeaf(32, 50, 1, 18),
+      ...[...Array(12)].map((_, i) => { const a = i * Math.PI / 6; return fE(32 + Math.cos(a) * 15.5, 24 + Math.sin(a) * 15.5, 3.8, 7.5, a + Math.PI / 2); }), fE(32, 24, 10.5, 10.5), fE(32, 24, 5, 5)] },
+    { id: 'rosa', f: () => [fStem(32, 32, 63), fLeaf(32, 50, -1), fLeaf(32, 42, 1), cP('M187.5,350 L168.8,337.5 L187.5,325 Z'), fE(32, 15, 13, 9),
+      cL('M237,102 A37.5,37.5 0 1 1 223,66'), cL('M216,94 A16,16 0 1 1 200,77'),
+      cP('M106.3,100 Q93.8,225 200,237.5 Q306.3,225 293.8,100 Q250,156.3 200,131.3 Q150,156.3 106.3,100 Z'), cL('M200,131.3 Q187.5,187.5 200,237.5')] },
+    { id: 'ciliegio', f: () => [...[0, 1, 2, 3, 4].map(i => { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; return fE(32 + Math.cos(a) * 14, 32 + Math.sin(a) * 14, 11, 11); }), fE(32, 32, 8, 8)] },
+    { id: 'vaso', f: () => [cL('M150,250 L106,137.5 M200,250 L200,100 M250,250 L294,137.5'), fLeaf(28, 36, -1, 12), fLeaf(36, 34, 1, 12),
+      ...fSmall(16, 18, 6.5), ...fSmall(32, 11, 6.5), ...fSmall(48, 18, 6.5), cP('M131.3,287.5 L268.8,287.5 L250,387.5 L150,387.5 Z'), cR(112.5, 250, 175, 37.5, 6)] },
+    { id: 'farfalla', f: () => [cL('M193.8,131.3 Q162.5,50 137.5,56.3 M206.3,131.3 Q237.5,50 262.5,56.3'), fE(19, 25, 13, 11, -.5), fE(45, 25, 13, 11, .5), fE(22, 44, 10, 9, .4), fE(42, 44, 10, 9, -.4),
+      fE(17, 24, 4, 4), fE(47, 24, 4, 4), fE(21, 45, 3.5, 3.5), fE(43, 45, 3.5, 3.5), fE(32, 36, 3.5, 15), fE(32, 21, 4, 4)] },
+    { id: 'coccinella', f: () => [cL('M112.5,187.5 L50,206 M112.5,237.5 L50,256 M112.5,287.5 L50,306 M287.5,187.5 L350,206 M287.5,237.5 L350,256 M287.5,287.5 L350,306'),
+      cL('M181.3,75 Q150,25 125,37.5 M218.8,75 Q250,25 275,37.5'), fE(32, 18, 9, 8), fE(32, 38, 19, 19), cL('M200,125 V356'),
+      fE(24, 30, 4, 4), fE(40, 30, 4, 4), fE(22, 43, 3.6, 3.6), fE(42, 43, 3.6, 3.6)] },
+  ] },
+];
+
+const COL_PALETTE = ['#ff4f81', '#ff8fb1', '#ffc2d4', '#ff5d5d', '#ff9f1c', '#ffd23f', '#fff3b0', '#7bd389', '#2ec4b6', '#b8f2e6', '#7fd3f7', '#4d96ff',
+  '#7b5cff', '#c77dff', '#e0c3fc', '#a0663c', '#d9a066', '#f6c9a8', '#8a5532', '#ffffff', '#c9c9c9', '#6c757d', '#2b2d42', '#111111'];
+
+function colorSVG(pic, fills, w, h, extra = '') {
+  const items = pic.f();
+  let body = '';
+  items.forEach((it, i) => {
+    const a = Object.entries(it.a).filter(([, v]) => v !== '' && v !== undefined).map(([k, v]) => `${k}="${v}"`).join(' ');
+    if (it.k === 'f') body += `<${it.tag} ${a} data-i="${i}" fill="${fills[i] || '#ffffff'}" stroke="#3a2e4f" stroke-width="5" stroke-linejoin="round" style="transition:fill .25s"/>`;
+    if (it.k === 'l') body += `<${it.tag} ${a} fill="none" stroke="#3a2e4f" stroke-width="5" stroke-linecap="round" pointer-events="none"/>`;
+    if (it.k === 'd') body += `<${it.tag} ${a} fill="#2b2d42" pointer-events="none"/>`;
+    if (it.k === 'w') body += `<${it.tag} ${a} fill="#ffffff" opacity=".85" pointer-events="none"/>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="${w}" height="${h}">${extra}${body}</svg>`;
+}
+
+function colorModern(setId, picId) {
+  stage.classList.add('modern');
+  bg('radial-gradient(circle at 30% 30%, #fff7e6 0%, #ffe3f1 45%, #d9ccff 100%)');
+  const set = COLOR_SETS.find(s => s.id === setId) || COLOR_SETS[store('colSet') ? COLOR_SETS.findIndex(s => s.id === store('colSet')) : 0] || COLOR_SETS[0];
+  const pic = set.pics.find(p => p.id === picId) || set.pics.find(p => p.id === store('colPic-' + set.id)) || set.pics[0];
+  store('colSet', set.id); store('colPic-' + set.id, pic.id);
+  const key = 'colora-' + pic.id;
+  let fills = {};
+  try { fills = JSON.parse(store(key) || '{}') || {}; } catch (e) { fills = {}; }
+  const undo = [];
+  let cur = store('colColor') || '#ff4f81';
+
+  // --- tavolozza ---
+  const pal = el('div', { left: '12px', top: '12px', width: '136px', height: '744px' }); pal.className = 'm-panel';
+  const sws = COL_PALETTE.map((col, i) => {
+    const s = el('div', { left: px(14 + (i % 2) * 60), top: px(14 + Math.floor(i / 2) * 60), background: col }, pal);
+    s.className = 'm-sw' + (col === cur ? ' on' : '');
+    tap(s, () => { cur = col; store('colColor', col); sws.forEach(q => q.classList.remove('on')); s.classList.add('on'); eraser.classList.remove('primary'); SFX.tap(); });
+    return s;
+  });
+
+  // --- il disegno ---
+  const card = el('div', { left: '160px', top: '12px', width: '600px', height: '600px' }); card.className = 'm-panel';
+  const holder = el('div', { position: 'absolute', left: '20px', top: '20px', width: '560px', height: '560px' }, card);
+  const draw = () => { holder.innerHTML = colorSVG(pic, fills, 560, 560); };
+  draw();
+  const save = () => store(key, JSON.stringify(fills));
+  holder.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    const z = ev.target.closest && ev.target.closest('[data-i]');
+    if (!z) return;
+    const i = z.dataset.i, prev = fills[i] || '#ffffff';
+    if (prev === cur) return;
+    undo.push([i, prev]); fills[i] = cur; z.setAttribute('fill', cur); save(); SFX.fill();
+    refreshThumb();
+  });
+
+  // --- strumenti ---
+  const tool = (x, w, label, fn, cls = '') => { const b = tap(el('div', { left: px(x), top: '628px', width: px(w), height: '64px', fontSize: '22px' }, stage, label), fn); b.className = 'm-btn ' + cls; return b; };
+  tool(160, 140, '↩ Annulla', () => {
+    const u = undo.pop(); if (!u) return;
+    if (u[1] === '#ffffff') delete fills[u[0]]; else fills[u[0]] = u[1];
+    save(); draw(); refreshThumb(); SFX.tap();
+  });
+  const eraser = tool(310, 140, '🧽 Gomma', () => { cur = '#ffffff'; sws.forEach(q => q.classList.remove('on')); eraser.classList.add('primary'); SFX.tap(); });
+  tool(460, 160, '🔄 Ricomincia', () => { fills = {}; undo.length = 0; save(); draw(); refreshThumb(); SFX.no(); });
+  tool(630, 130, '💾 Salva', () => {
+    SFX.ok();
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 1000;
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 1000, 1000); x.drawImage(img, 0, 0, 1000, 1000);
+      saveCanvas(c, 'colorato', 1);
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(colorSVG(pic, fills, 1000, 1000, '<rect width="400" height="400" fill="#fff"/>'));
+  }, 'primary');
+  const hint = el('div', { position: 'absolute', left: '160px', top: '702px', width: '600px', textAlign: 'center', fontSize: '20px', color: '#7b2cbf', fontWeight: '700' }, stage,
+    LANG === 'en' ? 'Pick a color, then tap a shape 🎨' : 'Scegli un colore e tocca una zona 🎨');
+
+  // --- temi e disegni ---
+  const side = el('div', { left: '772px', top: '12px', width: '240px', height: '744px' }); side.className = 'm-panel';
+  COLOR_SETS.forEach((s, i) => {
+    const t = el('div', { left: px(10 + i * 37), top: '12px', width: '34px', height: '44px', fontSize: '22px', borderRadius: '12px' }, side, s.icon);
+    t.className = 'm-tab' + (s.id === set.id ? ' on' : '');
+    tap(t, () => { SFX.flip(); show(colorModern, s.id); });
+  });
+  const thumbs = {};
+  set.pics.forEach((p, i) => {
+    const t = el('div', { left: px(12 + (i % 2) * 110), top: px(68 + Math.floor(i / 2) * 112), width: '104px', height: '104px' }, side);
+    t.className = 'm-thumb' + (p.id === pic.id ? ' on' : '');
+    let f = {};
+    try { f = p.id === pic.id ? fills : JSON.parse(store('colora-' + p.id) || '{}') || {}; } catch (e) { f = {}; }
+    t.innerHTML = colorSVG(p, f, 104, 104);
+    thumbs[p.id] = t;
+    tap(t, () => { if (p.id !== pic.id) { SFX.flip(); show(colorModern, set.id, p.id); } });
+  });
+  function refreshThumb() { thumbs[pic.id].innerHTML = colorSVG(pic, fills, 104, 104); }
+  const back = tap(el('div', { left: '15px', top: '670px', width: '210px', height: '60px', fontSize: '22px' }, side, '← Indietro'), () => { SFX.tap(); show(homeScreen); });
   back.className = 'm-btn';
 }
 
