@@ -661,7 +661,7 @@ DOLL.palette = k => k === 'pelle' ? DOLL.skin : k === 'occhi' ? DOLL.eyes : k ==
 function shade(h, a) {
   const f = v => Math.max(0, Math.min(255, Math.round(a < 0 ? v * (1 + a) : v + (255 - v) * a)));
   const [r, g, b] = hex2rgb(h);
-  return `rgb(${f(r)},${f(g)},${f(b)})`;
+  return '#' + [r, g, b].map(v => f(v).toString(16).padStart(2, '0')).join('');   // esadecimale: si può ri-sfumare
 }
 
 // Restituisce il codice SVG della bambina vestita secondo lo stato S
