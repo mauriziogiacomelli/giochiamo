@@ -2041,7 +2041,7 @@ const COLOR_SETS = [
 
 // disegna i mattoncini vettoriali (400x400) dentro il disegno retrò (64x64)
 function drawDSL(x, items) {
-  x.save(); x.scale(64 / 400, 64 / 400); x.lineWidth = 12.5; x.lineJoin = 'round'; x.lineCap = 'round';
+  x.save(); x.scale(64 / 400, 64 / 400); x.lineWidth = 10; x.lineJoin = 'round'; x.lineCap = 'round';
   for (const it of items) {
     const a = it.a; let p;
     if (it.tag === 'path') p = new Path2D(a.d);
@@ -2061,6 +2061,15 @@ function drawDSL(x, items) {
 const COL_PALETTE = ['#ff4f81', '#ff8fb1', '#ffc2d4', '#ff5d5d', '#ff9f1c', '#ffd23f', '#fff3b0', '#7bd389', '#2ec4b6', '#b8f2e6', '#7fd3f7', '#4d96ff',
   '#7b5cff', '#c77dff', '#e0c3fc', '#a0663c', '#d9a066', '#f6c9a8', '#8a5532', '#ffffff', '#c9c9c9', '#6c757d', '#2b2d42', '#111111'];
 
+// arcobaleno e torta disegnati a mano (le emoji vengono con troppi puntini)
+const band = (R, r, cx = 200, cy = 270) => cP(`M${cx - R},${cy} A${R},${R} 0 0 1 ${cx + R},${cy} L${cx + r},${cy} A${r},${r} 0 0 0 ${cx - r},${cy} Z`);
+ART['🌈'] = x => drawDSL(x, [band(180, 150), band(150, 120), band(120, 90), band(90, 60), band(60, 32),
+  cC(40, 282, 34), cC(80, 296, 30), cC(14, 300, 26), cC(360, 282, 34), cC(320, 296, 30), cC(386, 300, 26)]);
+ART['🎂'] = x => drawDSL(x, [cE(200, 352, 170, 26), cR(70, 240, 260, 110, 18), cR(110, 160, 180, 84, 16),
+  cP('M110,190 Q110,160 140,160 L260,160 Q290,160 290,190 Q275,212 262,190 Q248,212 234,190 Q220,212 206,190 Q192,212 178,190 Q164,212 150,190 Q136,212 122,190 Z'),
+  cR(140, 104, 20, 58, 6), cR(190, 96, 20, 66, 6), cR(240, 104, 20, 58, 6),
+  cP('M150,100 Q136,78 150,58 Q164,78 150,100 Z'), cP('M200,92 Q186,70 200,50 Q214,70 200,92 Z'), cP('M250,100 Q236,78 250,58 Q264,78 250,100 Z'),
+  cC(120, 290, 14), cC(200, 296, 14), cC(280, 290, 14)]);
 [['🏠', 'casa'], ['👸', 'principessa'], ['🦕', 'dinosauro']].forEach(([emoji, id]) => {
   const pic = COLOR_SETS.find(s => s.id === 'fantasia').pics.find(q => q.id === id);
   ART[emoji] = x => drawDSL(x, pic.f());
