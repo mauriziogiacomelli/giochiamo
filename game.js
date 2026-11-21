@@ -1569,7 +1569,7 @@ function seekScreen(sc) {
   bg('linear-gradient(#f6efff,#e9dcff)');
   const hard = store('seekLevel') === 'hard';
   // facile: 5 particolari grandi; difficile: 8 particolari piccoli, tanti oggetti in più e lenti molto ingrandite
-  const L = hard ? { N: 8, min: 28, var: 14, gap: 6, view: 58, jit: 34, lens: 92, step: 101, fill: 46 }
+  const L = hard ? { N: 8, min: 28, var: 14, gap: 6, view: 38, jit: 26, lens: 92, step: 101, fill: 46 }
                  : { N: 5, min: 50, var: 22, gap: 22, view: 140, jit: 30, lens: 150, step: 162, fill: 0 };
   const W0 = 1000, H0 = 546, N = L.N;
   const placed = [];
