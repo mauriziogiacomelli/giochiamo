@@ -16,7 +16,7 @@ const EN = {
   'Indietro': 'Back', 'Ancora!': 'Again!', 'Ricarica': 'Reload', 'Chiudi': 'Close', 'Ciao ciao!': 'Bye bye!',
   "Per uscire usa il tasto Home<br>o scorri verso l'alto dal basso.": 'To exit, press the Home button<br>or swipe up from the bottom.',
   'Resta': 'Stay', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
-  'MODELLO': 'ORIGINAL', 'COPIA': 'COPY', 'Trovate:': 'Found:', 'BRAVISSIMA!': 'WELL DONE!', 'HAI TROVATO TUTTO!': 'YOU FOUND THEM ALL!',
+  'MODELLO': 'ORIGINAL', 'COPIA': 'COPY', 'Originale': 'Original', 'Copia': 'Copy', 'Trovate:': 'Found:', 'BRAVISSIMA!': 'WELL DONE!', 'HAI TROVATO TUTTO!': 'YOU FOUND THEM ALL!',
   'Gonna e pantaloni': 'Skirts & pants', 'Capelli': 'Hair', 'Accessori': 'Accessories', 'Maglia': 'Tops', 'Pantaloni': 'Pants',
   'Scarpe': 'Shoes', 'Occhi': 'Eyes', 'Pelle': 'Skin', 'Colori': 'Colors', 'Bambina': 'Girl', 'Bambino': 'Boy',
   'A caso': 'Random', 'Foto': 'Photo', 'Giardino': 'Garden', 'Mare': 'Sea', 'Cameretta': 'Bedroom',
@@ -524,7 +524,7 @@ const GAMES = [
   { name: 'Memory', icon: null, x: 80, y: 110, go: () => show(themePick, memoryScreen) },
   { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 100, go: () => show(themePick, colorScreen) },
   { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 110, go: () => show(paintScreen, MIX) },
-  { name: 'Trova le differenze', icon: '🔍', x: 80, y: 404, go: () => show(diffScreen, randomTheme()) },
+  { name: 'Trova le differenze', icon: '🔍', x: 80, y: 404, go: () => show(diffPick) },
   { name: 'Gioco dei vestiti', icon: '👗', x: 392, y: 394, go: () => show(dressScreen) },
   { name: 'Trova i particolari', icon: '👀', x: 704, y: 404, go: () => show(seekPick) },
 ];
@@ -675,7 +675,8 @@ const RETRY_EN = ['Almost… try again!', 'Oops… try again!', 'Not a match… 
 const SAY_EN = {
   'Bravissima! Hai trovato tutte le coppie!': 'Well done! You found all the pairs!',
   'Bravissima! Hai trovato tutti i particolari!': 'Well done! You found all the details!',
-  'Trova i particolari!': 'Find the details!', 'Livello difficile. Pronti? Via!': 'Hard level. Ready? Go!',
+  'Trova i particolari!': 'Find the details!', 'Trova le differenze!': 'Spot the differences!',
+  'Bravissima! Hai trovato tutte le differenze!': 'Well done! You found all the differences!', 'Livello difficile. Pronti? Via!': 'Hard level. Ready? Go!',
   'Guarda bene!': 'Look carefully!', 'Cerca ancora!': 'Keep looking!', 'Non è qui… riprova!': "It's not here… try again!",
   'Trovato!': 'Found it!', 'Sì!': 'Yes!', 'Bene!': 'Good!', 'Ciao! Giochiamo!': "Hi! Let's play!",
   'Bravissimi! Tutti trovati!': 'Great job! All found!', 'Nuovo record!': 'New record!',
@@ -1161,69 +1162,6 @@ function paintScreen(t) {
 }
 
 // =====================================================================
-//  TROVA LE DIFFERENZE
-// =====================================================================
-function diffScreen(t) {
-  bg('#ffec3d');
-  const RES = 112, SC = 4, N_DIFF = 4;
-  const seed = 1 + rnd(100000);
-  const cells = shuffle([...Array(16).keys()]).slice(0, 8);
-  const items = cells.map(cell => ({
-    e: t.items[rnd(t.items.length)],
-    x: (cell % 4) * 28 + 2 + rnd(3) - 1, y: (cell >> 2) * 28 + 2 + rnd(3) - 1, s: 24, flip: false, gone: false,
-  }));
-  const copy = items.map(o => Object.assign({}, o));
-  const diffs = shuffle([...items.keys()]).slice(0, N_DIFF).map(k => {
-    const o = copy[k], kind = rnd(4);
-    if (kind === 0) o.gone = true;
-    else if (kind === 1) { let e; do { e = t.items[rnd(t.items.length)]; } while (e === o.e); o.e = e; }
-    else if (kind === 2) o.flip = true;
-    else { o.s = 32; o.x -= 4; o.y -= 4; }
-    return { cx: items[k].x + 12, cy: items[k].y + 12, found: false };
-  });
-  const panels = [];
-  [[40, 'MODELLO', items], [536, 'COPIA', copy]].forEach(([left, label, list]) => {
-    el('div', { position: 'absolute', left: px(left), width: px(RES * SC), top: '20px', textAlign: 'center' }, stage,
-      `<span class="title" style="font-size:36px">${label}</span>`);
-    const frame = el('div', { position: 'absolute', left: px(left), top: '90px', width: px(RES * SC), height: px(RES * SC),
-      border: '6px solid #222', boxShadow: '0 0 0 6px #1fb890, 8px 8px 0 rgba(0,0,0,.35)', marginLeft: '-6px' });
-    const c = pxCanvas(RES, RES, SC, { left: '0', top: '0' }, frame);
-    panels.push({ c, list });
-    tap(c, ev => check(...canvasPos(c, ev)));
-  });
-  const counter = el('div', { position: 'absolute', left: '300px', right: '40px', top: '700px', textAlign: 'center' });
-  function draw() {
-    for (const { c, list } of panels) {
-      const x = c.getContext('2d');
-      drawScene(x, RES, RES, t, seed);
-      for (const o of list) {
-        if (o.gone) continue;
-        const sp = sprite(o.e, o.s);
-        if (o.flip) { x.save(); x.translate(o.x + o.s, o.y); x.scale(-1, 1); x.drawImage(sp, 0, 0); x.restore(); }
-        else x.drawImage(sp, o.x, o.y);
-      }
-      // cerchi rossi sugli errori trovati (a pixel)
-      x.fillStyle = '#ff0000';
-      for (const d of diffs) if (d.found) for (let a = 0; a < 64; a++) {
-        const ang = a / 64 * Math.PI * 2;
-        x.fillRect(Math.round(d.cx + Math.cos(ang) * 17) - 1, Math.round(d.cy + Math.sin(ang) * 17) - 1, 2, 2);
-      }
-    }
-    const n = diffs.filter(d => d.found).length;
-    counter.innerHTML = tr(`<span class="title" style="font-size:34px">Trovate: ${'★'.repeat(n)}${'☆'.repeat(N_DIFF - n)}</span>`);
-  }
-  function check(x, y) {
-    const d = diffs.find(d => !d.found && Math.hypot(d.cx - x, d.cy - y) < 17);
-    if (!d) { SFX.no(); return; }
-    d.found = true; SFX.ok(); draw();
-    if (diffs.every(d => d.found)) setTimeout(() => party('HAI TROVATO TUTTO!', () => show(diffScreen, randomTheme()), () => show(homeScreen)), 700);
-  }
-  draw();
-  if (items.concat(copy).some(o => isAnimated(o.e))) onAnim(draw);
-  backBtn(() => show(homeScreen));
-}
-
-// =====================================================================
 //  GIOCO DEI VESTITI (grafica moderna, vettoriale)
 // =====================================================================
 const DOLL = {
@@ -1647,31 +1585,33 @@ const SEEK = [
 ];
 
 const fmtTime = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-function seekPick() {
+// scelta della scena + livello, condivisa da "Trova i particolari" e "Trova le differenze"
+function scenePick(cfg) {
   stage.classList.add('modern');
   bg('radial-gradient(circle at 30% 30%, #fff7e6 0%, #ffe3f1 45%, #d9ccff 100%)');
-  el('div', { left: '0', right: '0', top: '40px', textAlign: 'center', fontSize: '50px' }, stage, '👀 Trova i particolari').className = 'm-label';
-  const hard = store('seekLevel') === 'hard';
+  el('div', { left: '0', right: '0', top: '40px', textAlign: 'center', fontSize: '50px' }, stage, cfg.title).className = 'm-label';
+  const hard = store(cfg.level) === 'hard';
   SEEK.forEach((sc, i) => {
     const c = el('div', { position: 'absolute', left: px(70 + (i % 2) * 450), top: px(130 + Math.floor(i / 2) * 270), width: '420px', height: '240px', borderRadius: '32px',
       overflow: 'hidden', cursor: 'pointer', boxShadow: '0 14px 30px rgba(110,50,160,.25)', transition: 'transform .12s' });
     c.innerHTML = `<svg viewBox="0 0 1000 546" width="420" height="230" preserveAspectRatio="xMidYMid slice">${sc.bg()}</svg>`;
-    const best = hard && store('seekBest-' + sc.id);
+    const best = hard && store(cfg.best + sc.id);
     el('div', { position: 'absolute', left: '0', right: '0', bottom: '0', height: '64px', background: 'rgba(255,255,255,.88)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '32px', fontWeight: '800', color: '#5a189a' }, c,
       `<span style="font-size:38px">${sc.icon}</span>${sc.name}` + (best ? `<span style="font-size:22px;color:#b07a00">🏆 ${fmtTime(+best)}</span>` : ''));
-    tap(c, () => { SFX.flip(); show(seekScreen, sc); });
+    tap(c, () => { SFX.flip(); show(cfg.play, sc); });
   });
   const back = tap(el('div', { left: '20px', top: '692px', width: '170px', height: '58px' }, stage, '← Indietro'), () => { SFX.tap(); show(homeScreen); });
   back.className = 'm-btn';
   // livello: facile (bambini) o difficile (genitori)
   [['easy', '😊 Facile', 520, 190], ['hard', '🧠 Difficile (genitori)', 724, 280]].forEach(([lv, label, x, w]) => {
     const b = tap(el('div', { left: px(x), top: '692px', width: px(w), height: '58px', fontSize: '22px' }, stage, label), () => {
-      store('seekLevel', lv); SFX.tap(); show(seekPick);
+      store(cfg.level, lv); SFX.tap(); show(cfg.self);
     });
     b.className = 'm-btn' + ((lv === 'hard') === hard ? ' primary' : '');
   });
 }
+function seekPick() { scenePick({ title: '👀 Trova i particolari', play: seekScreen, level: 'seekLevel', best: 'seekBest-', self: seekPick }); }
 
 function seekScreen(sc) {
   stage.classList.add('modern');
@@ -1777,6 +1717,138 @@ function seekScreen(sc) {
   back.className = 'm-btn';
   const again = tap(el('div', { left: '16px', top: px(lensTop - (hard ? 28 : 0) + bh + 12), width: '170px', height: px(bh), fontSize: '22px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(seekScreen, sc); });
   again.className = 'm-btn primary';
+}
+
+// =====================================================================
+//  TROVA LE DIFFERENZE (grafica moderna, livello facile e difficile)
+// =====================================================================
+function diffPick() { scenePick({ title: '🔍 Trova le differenze', play: diffScreen, level: 'diffLevel', best: 'diffBest-', self: diffPick }); }
+
+function diffScreen(sc) {
+  stage.classList.add('modern');
+  bg('linear-gradient(#f6efff,#e9dcff)');
+  const hard = store('diffLevel') === 'hard';
+  const W0 = 1000, H0 = 546;
+  const L = hard ? { N: 8, min: 34, var: 14, gap: 8, fill: 40, hit: 36, ring: 38 }
+                 : { N: 5, min: 74, var: 20, gap: 26, fill: 0, hit: 60, ring: 62 };
+  // --- oggetti nella scena ---
+  const placed = [];
+  const free = (x, y, size) => placed.every(o => Math.hypot(o.x - x, o.y - y) > (o.size + size) / 2 + L.gap);
+  const spot = (z, size) => {
+    const [x0, y0, x1, y1] = sc.zones[z];
+    for (let k = 0; k < 80; k++) { const x = x0 + rnd(x1 - x0), y = y0 + rnd(y1 - y0); if (free(x, y, size)) return [x, y]; }
+    return null;
+  };
+  const put = (e, z) => {
+    const size = L.min + rnd(L.var), p = spot(z, size);
+    if (p) placed.push({ e, z, x: p[0], y: p[1], size, rot: rnd(hard ? 40 : 16) - (hard ? 20 : 8), flip: false, hue: false, gone: false });
+  };
+  const uniq = shuffle(sc.items.slice());
+  for (const [e, z] of hard ? uniq : uniq.slice(0, 12)) put(e, z);
+  // --- le differenze ---
+  const pale = new Set(['🐰', '⚽', '🕊️', '🐑', '🏐', '🐚', '🧦', '🐐', '🖼️', '📖', '🌙', '⭐', '🌟', '👽']);
+  const types = hard ? ['hue', 'rot', 'move', 'size', 'flip', 'gone', 'swap', 'add'] : shuffle(['gone', 'swap', 'flip', 'add', 'size']);
+  const candidates = shuffle(placed.slice());
+  const copy = placed.map(o => Object.assign({}, o));
+  const diffs = [];
+  for (const type of types) {
+    if (type === 'add') {
+      const [e, z] = sc.items[rnd(sc.items.length)], size = L.min + rnd(L.var), p = spot(z, size);
+      if (!p) continue;
+      const o = { e, z, x: p[0], y: p[1], size, rot: 0, flip: false, hue: false, gone: false, onlyCopy: true };
+      placed.push(Object.assign({}, o, { gone: true })); copy.push(o);
+      diffs.push({ x: o.x, y: o.y, e }); continue;
+    }
+    const i = candidates.findIndex(o => !o.used && (type !== 'hue' || !pale.has(o.e)));
+    if (i < 0) continue;
+    const o = candidates[i]; o.used = true;
+    const c = copy[placed.indexOf(o)];
+    if (type === 'gone') c.gone = true;
+    if (type === 'swap') { let e; do { e = sc.items[rnd(sc.items.length)][0]; } while (e === o.e); c.e = e; }
+    if (type === 'flip') c.flip = true;
+    if (type === 'hue') c.hue = true;
+    if (type === 'rot') c.rot += (rnd(2) ? 1 : -1) * 28;
+    if (type === 'size') c.size = Math.round(o.size * (hard ? (rnd(2) ? 1.35 : 0.72) : 1.5));
+    if (type === 'move') { c.x += (rnd(2) ? 1 : -1) * 26; c.y += (rnd(2) ? 1 : -1) * 14; }
+    diffs.push({ x: (o.x + c.x) / 2, y: (o.y + c.y) / 2, e: o.e });
+  }
+  // difficile: tanti oggetti di disturbo, uguali nelle due scene
+  if (L.fill) for (let k = 0; k < 300 && placed.length < L.fill; k++) {
+    const [e, z] = sc.items[rnd(sc.items.length)], size = L.min + rnd(L.var), p = spot(z, size);
+    if (p && diffs.every(d => Math.hypot(d.x - p[0], d.y - p[1]) > L.hit * 1.6)) {
+      const o = { e, z, x: p[0], y: p[1], size, rot: rnd(40) - 20, flip: false, hue: false, gone: false };
+      placed.push(o); copy.push(Object.assign({}, o));
+    }
+  }
+  const N = diffs.length;
+  const defs = `<filter id="dh-sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".25"/></filter>` +
+    `<filter id="dh-hue" x="-30%" y="-30%" width="160%" height="160%"><feColorMatrix type="hueRotate" values="150"/><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".25"/></filter>`;
+  const draw = list => sc.bg().replace('<defs>', '<defs>' + defs) + list.filter(o => !o.gone).map(o =>
+    `<g transform="translate(${o.x} ${o.y}) rotate(${o.rot}) scale(${o.flip ? -1 : 1} 1)"><text font-size="${o.size}" text-anchor="middle" dominant-baseline="central" filter="url(#${o.hue ? 'dh-hue' : 'dh-sh'})">${o.e}</text></g>`).join('');
+
+  // --- le due scene, una sopra l'altra ---
+  const PW = 622, PH = 340;
+  const panels = [[12, 'Originale', placed], [400, 'Copia', copy]].map(([top, label, list]) => {
+    const d = el('div', { position: 'absolute', left: '12px', top: px(top), width: px(PW), height: px(PH), borderRadius: '24px', overflow: 'hidden',
+      boxShadow: '0 12px 26px rgba(110,50,160,.25)' });
+    d.innerHTML = `<svg viewBox="0 0 ${W0} ${H0}" width="${PW}" height="${PH}" preserveAspectRatio="none">${draw(list)}<g class="dh-marks"></g></svg>`;
+    el('div', { position: 'absolute', left: '12px', top: '10px', padding: '4px 14px', borderRadius: '999px', background: 'rgba(255,255,255,.85)',
+      fontSize: '18px', fontWeight: '800', color: '#5a189a' }, d, label);
+    return d;
+  });
+  // linea "=" tra le due scene
+  el('div', { position: 'absolute', left: '12px', top: '354px', width: px(PW), height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '30px', color: '#9d4edd' }, stage, '⇅');
+
+  // --- colonna di destra ---
+  el('div', { left: '650px', top: '24px', width: '362px', textAlign: 'center', fontSize: '34px', lineHeight: '40px' }, stage, '🔍 Trova le differenze').className = 'm-label';
+  const stars = el('div', { position: 'absolute', left: '650px', top: '130px', width: '362px', textAlign: 'center', fontSize: hard ? '40px' : '52px',
+    letterSpacing: '4px', color: '#ffb703', textShadow: '0 3px 0 #fff' });
+  let done = 0, misses = 0, secs = 0, timer = null;
+  const timerEl = hard ? el('div', { left: '716px', top: '300px', width: '230px', height: '60px', fontSize: '26px', background: 'rgba(255,255,255,.9)' }, stage) : null;
+  if (timerEl) timerEl.className = 'm-btn';
+  const upd = () => {
+    stars.innerHTML = '★'.repeat(done) + '<span style="color:#d9ccff">' + '★'.repeat(N - done) + '</span>';
+    if (timerEl) timerEl.textContent = '⏱ ' + fmtTime(secs) + (misses ? '  ✖' + misses : '');
+  };
+  upd();
+  if (hard) { timer = setInterval(() => { secs++; upd(); }, 1000); cleanup = () => clearInterval(timer); }
+
+  Voice.say(hard ? 'Livello difficile. Pronti? Via!' : 'Trova le differenze!');
+  panels.forEach(pn => tap(pn, ev => {
+    const r = pn.getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width * W0, y = (ev.clientY - r.top) / r.height * H0;
+    const d = diffs.find(d => !d.found && Math.hypot(d.x - x, d.y - y) < L.hit);
+    if (!d) {
+      SFX.no(); misses++; upd();
+      const m = pn.querySelector('.dh-marks');
+      m.insertAdjacentHTML('beforeend', `<text x="${x}" y="${y}" font-size="40" text-anchor="middle" dominant-baseline="central" class="sk-miss">✖️</text>`);
+      const last = m.lastChild; setTimeout(() => last.remove(), 700);
+      if (!hard && misses % 3 === 0) Voice.say(pick(['Guarda bene!', 'Cerca ancora!', 'Non è qui… riprova!']));
+      return;
+    }
+    d.found = true; done++; upd(); SFX.ok();
+    panels.forEach(q => q.querySelector('.dh-marks').insertAdjacentHTML('beforeend',
+      `<circle cx="${d.x}" cy="${d.y}" r="${L.ring}" fill="none" stroke="#2ec4b6" stroke-width="${hard ? 6 : 8}" class="sk-hit"/>`));
+    if (done === N) {
+      if (hard) {
+        clearInterval(timer);
+        const key = 'diffBest-' + sc.id, best = +(store(key) || 0), record = !best || secs < best;
+        if (record) store(key, String(secs));
+        Voice.speak(LANG === 'en' ? 'Great job! All found!' + (record ? ' New record!' : '') : 'Bravissimi! Tutti trovati!' + (record ? ' Nuovo record!' : ''));
+        setTimeout(() => party((record ? '🏆 RECORD ' : '⏱ ') + fmtTime(secs), () => show(diffScreen, sc), () => show(diffPick)), 900);
+      } else {
+        Voice.say('Bravissima! Hai trovato tutte le differenze!');
+        setTimeout(() => party('BRAVISSIMA!', () => show(diffScreen, sc), () => show(diffPick)), 900);
+      }
+    } else if (hard) Voice.say(pick(['Trovato!', 'Sì!', 'Bene!']));
+    else Voice.praise(d.e);
+  }));
+
+  const again = tap(el('div', { left: '680px', top: '560px', width: '300px', height: '78px', fontSize: '26px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(diffScreen, sc); });
+  again.className = 'm-btn primary';
+  const back = tap(el('div', { left: '680px', top: '656px', width: '300px', height: '78px', fontSize: '26px' }, stage, '← Indietro'), () => { SFX.tap(); show(diffPick); });
+  back.className = 'm-btn';
 }
 
 // ---------- avvio ----------
