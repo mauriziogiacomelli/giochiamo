@@ -18,7 +18,7 @@ const EN = {
   'Resta': 'Stay', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
   'MODELLO': 'ORIGINAL', 'COPIA': 'COPY', 'Originale': 'Original', 'Copia': 'Copy', 'Trovate:': 'Found:', 'BRAVISSIMA!': 'WELL DONE!', 'HAI TROVATO TUTTO!': 'YOU FOUND THEM ALL!',
   'Gonna e pantaloni': 'Skirts & pants', 'Capelli': 'Hair', 'Accessori': 'Accessories', 'Maglia': 'Tops', 'Pantaloni': 'Pants',
-  'Scarpe': 'Shoes', 'Occhi': 'Eyes', 'Pelle': 'Skin', 'Colori': 'Colors', 'Bambina': 'Girl', 'Bambino': 'Boy',
+  'Scarpe': 'Shoes', 'Occhiali': 'Glasses', 'Occhi': 'Eyes', 'Pelle': 'Skin', 'Colori': 'Colors', 'Bambina': 'Girl', 'Bambino': 'Boy',
   'A caso': 'Random', 'Foto': 'Photo', 'Giardino': 'Garden', 'Mare': 'Sea', 'Cameretta': 'Bedroom',
   'Difficile (genitori)': 'Hard (parents)', 'Facile': 'Easy', 'Nuova': 'New',
 };
@@ -1168,6 +1168,7 @@ const DOLL = {
   cats: [
     { k: 'capelli', name: 'Capelli', icon: '💇‍♀️', styles: ['lunghi', 'coda', 'trecce', 'caschetto', 'chignon'] },
     { k: 'accessori', name: 'Accessori', icon: '👑', styles: ['niente', 'fiocco', 'corona', 'cappello', 'cerchietto', 'gattina'] },
+    { k: 'occhiali', name: 'Occhiali', icon: '👓', styles: ['niente', 'rotondi', 'quadrati', 'da sole', 'a cuore', 'a stella'] },
     { k: 'sopra', name: 'Maglia', icon: '👚', styles: ['maglietta', 'felpa', 'canottiera', 'cuore', 'pois'] },
     { k: 'sotto', name: 'Gonna e pantaloni', icon: '👗', styles: ['gonna', 'tutù', 'pantaloni', 'pantaloncini', 'vestito lungo', 'pois'] },
     { k: 'scarpe', name: 'Scarpe', icon: '👟', styles: ['ballerine', 'stivali', 'sneakers', 'sandali'] },
@@ -1179,11 +1180,12 @@ const DOLL = {
   hair: ['#3b2219', '#6b3e26', '#a0663c', '#d9a066', '#f2d16b', '#e85d3f', '#ff8fb1'],
   skin: ['#ffe3d1', '#f6c9a8', '#e0a47a', '#b9784e', '#8a5532', '#5c3720'],
   eyes: ['#6b4430', '#3d7bd9', '#2e9e6a', '#7a5cff', '#2b2d42', '#b07a45'],
-  crop: { capelli: '60 10 280 380', accessori: '60 10 280 240', sopra: '96 250 208 170', sotto: '86 350 228 230', scarpe: '130 455 140 125' },
+  crop: { capelli: '60 10 280 380', accessori: '60 10 280 240', occhiali: '96 120 208 150', sopra: '96 250 208 170', sotto: '86 350 228 230', scarpe: '130 455 140 125' },
 };
 DOLL.catsM = [
   { k: 'capelli', name: 'Capelli', icon: '💇‍♂️', styles: ['corti', 'spettinati', 'riccioli', 'ciuffo', 'rasati'] },
-  { k: 'accessori', name: 'Accessori', icon: '🧢', styles: ['niente', 'cappellino', 'occhiali', 'bandana', 'corona'] },
+  { k: 'accessori', name: 'Accessori', icon: '🧢', styles: ['niente', 'cappellino', 'bandana', 'corona', 'cappello'] },
+  { k: 'occhiali', name: 'Occhiali', icon: '👓', styles: ['niente', 'rotondi', 'quadrati', 'da sole', 'a cuore', 'a stella'] },
   { k: 'sopra', name: 'Maglia', icon: '👕', styles: ['maglietta', 'felpa', 'canottiera', 'righe', 'stella'] },
   { k: 'sotto', name: 'Pantaloni', icon: '👖', styles: ['pantaloni', 'jeans', 'pantaloncini', 'salopette'] },
   { k: 'scarpe', name: 'Scarpe', icon: '👟', styles: ['scarpe', 'sneakers', 'stivali', 'sandali'] },
@@ -1345,6 +1347,25 @@ function dollSVG(S, vb = '0 0 400 600', id = 'd') {
   s += `<path d="M150,104 Q200,78 250,104" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>`;
   if (!boy && (hair === 'coda' || hair === 'chignon')) s += E('accessori', hair === 'coda' ? 270 : 200, hair === 'coda' ? 116 : 104, 11, 9, C.accessori);
 
+  // --- occhiali ---
+  const gl = S.style.occhiali !== undefined ? st('occhiali') : 'niente', cg = C.occhiali || '#2b2d42';
+  if (gl && gl !== 'niente') {
+    const lens = { rotondi: ['#ffffff', .3], quadrati: ['#ffffff', .3], 'da sole': ['#2b2d42', .88], 'a cuore': ['#ff5d8f', .45], 'a stella': ['#ffd23f', .45] }[gl];
+    const att = `data-part="occhiali" fill="${lens[0]}" fill-opacity="${lens[1]}" stroke="${cg}" stroke-width="6" stroke-linejoin="round"`;
+    for (const x of [163, 237]) {
+      if (gl === 'rotondi') s += `<circle ${att} cx="${x}" cy="195" r="27"/>`;
+      if (gl === 'quadrati') s += `<rect ${att} x="${x - 30}" y="173" width="60" height="44" rx="8"/>`;
+      if (gl === 'da sole') s += `<rect ${att} x="${x - 28}" y="174" width="56" height="40" rx="15"/>`;
+      if (gl === 'a cuore') s += `<path ${att} d="M${x},222 C${x - 40},198 ${x - 30},166 ${x - 13},168 C${x - 5},168 ${x},175 ${x},180 C${x},175 ${x + 5},168 ${x + 13},168 C${x + 30},166 ${x + 40},198 ${x},222 Z"/>`;
+      if (gl === 'a stella') {
+        const pts = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 14 : 32; pts.push((x + Math.cos(a) * r).toFixed(1) + ',' + (197 + Math.sin(a) * r).toFixed(1)); }
+        s += `<polygon ${att} points="${pts.join(' ')}"/>`;
+      }
+    }
+    s += `<path data-part="occhiali" d="M${gl === 'a stella' ? 186 : 190},192 Q200,184 ${gl === 'a stella' ? 214 : 210},192 M${gl === 'quadrati' ? 133 : 136},190 L116,184 M${gl === 'quadrati' ? 267 : 264},190 L284,184" fill="none" stroke="${cg}" stroke-width="6" stroke-linecap="round"/>`;
+    if (gl !== 'a cuore' && gl !== 'a stella') s += `<path d="M146,184 l14,-5 M220,184 l14,-5" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>`;
+  }
+
   // --- accessori ---
   const ac = st('accessori'), ca = C.accessori;
   if (ac === 'fiocco') s += P('accessori', 'M262,104 C236,74 226,122 262,112 Z', ca) + P('accessori', 'M262,104 C288,74 298,122 262,112 Z', ca) + E('accessori', 262, 108, 9, 9, shade(ca, -.1));
@@ -1376,15 +1397,15 @@ let dressState = null;
 function dressDefault() {
   return {
     g: 'f',
-    style: { capelli: 0, accessori: 1, sopra: 3, sotto: 1, scarpe: 0 },
-    color: { capelli: '#a0663c', accessori: '#ff4f81', sopra: '#c77dff', sotto: '#ff8fb1', scarpe: '#ff4f81', occhi: '#6b4430', pelle: '#ffe3d1' },
+    style: { capelli: 0, accessori: 1, occhiali: 0, sopra: 3, sotto: 1, scarpe: 0 },
+    color: { capelli: '#a0663c', accessori: '#ff4f81', occhiali: '#ff4f81', sopra: '#c77dff', sotto: '#ff8fb1', scarpe: '#ff4f81', occhi: '#6b4430', pelle: '#ffe3d1' },
   };
 }
 function dressDefaultM() {
   return {
     g: 'm',
-    style: { capelli: 0, accessori: 0, sopra: 3, sotto: 2, scarpe: 1 },
-    color: { capelli: '#6b3e26', accessori: '#4d96ff', sopra: '#4d96ff', sotto: '#2b2d42', scarpe: '#ff5d5d', occhi: '#6b4430', pelle: '#ffe3d1' },
+    style: { capelli: 0, accessori: 0, occhiali: 0, sopra: 3, sotto: 2, scarpe: 1 },
+    color: { capelli: '#6b3e26', accessori: '#4d96ff', occhiali: '#2b2d42', sopra: '#4d96ff', sotto: '#2b2d42', scarpe: '#ff5d5d', occhi: '#6b4430', pelle: '#ffe3d1' },
   };
 }
 function dressScreen() {
@@ -1396,6 +1417,13 @@ function dressScreen() {
       const f = old && old.style && old.style.capelli !== undefined ? Object.assign(old, { g: 'f' }) : dressDefault();
       dressState = { g: 'f', f, m: dressDefaultM() };
     }
+  }
+  for (const g of ['f', 'm']) {   // salvataggi di prima degli occhiali
+    const d = dressState[g];
+    if (d.style.occhiali === undefined) d.style.occhiali = 0;
+    if (!d.color.occhiali) d.color.occhiali = '#2b2d42';
+    const n = DOLL.catsOf(g).find(c => c.k === 'accessori').styles.length;
+    if (d.style.accessori >= n) d.style.accessori = 0;
   }
   let S = dressState[dressState.g];
   let cat = 'sopra';
@@ -1426,7 +1454,7 @@ function dressScreen() {
   function drawPanel() {
     tabs.innerHTML = '';
     DOLL.catsOf(S.g).forEach((c, i) => {
-      const b = el('div', { left: px(i * 64), top: '0' }, tabs, c.icon);
+      const b = el('div', { left: px(i * 56), top: '0', width: '52px', height: '52px', fontSize: '27px' }, tabs, c.icon);
       b.className = 'm-tab' + (c.k === cat ? ' on' : '');
       tap(b, () => { cat = c.k; SFX.tap(); drawPanel(); });
     });
