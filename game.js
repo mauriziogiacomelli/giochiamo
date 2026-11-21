@@ -550,6 +550,26 @@ function homeScreen() {
     location.reload();
   });
   rl.className = 'btn green';
+  // chiudi: funziona nell'app installata (Android/PC); dove il sistema non lo permette spiega come uscire
+  const cl = tap(el('div', { left: '226px', top: '700px', width: '170px', height: '54px', fontSize: '24px' }, stage, '✖ Chiudi'), () => {
+    SFX.no();
+    Music.stop();
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    window.close();
+    setTimeout(() => {   // se siamo ancora qui, il sistema non ha permesso di chiudere
+      if (document.getElementById('bye')) return;
+      const o = el('div', { position: 'absolute', inset: '0', zIndex: '700', background: 'rgba(0,0,40,.7)' });
+      o.id = 'bye';
+      const box = el('div', { position: 'absolute', left: '162px', top: '200px', width: '700px', height: '330px', background: '#ffec3d',
+        border: '10px solid #ff2a1a', boxShadow: '0 0 0 6px #222', boxSizing: 'border-box', textAlign: 'center' }, o);
+      el('div', { marginTop: '34px' }, box, '<span class="title" style="font-size:52px">Ciao ciao! 👋</span>');
+      el('div', { margin: '22px 40px 0', fontSize: '26px', color: '#5a1000', fontFamily: 'sans-serif', fontWeight: '700' }, box,
+        'Per uscire usa il tasto Home<br>o scorri verso l\'alto dal basso.');
+      const back = tap(el('div', { left: '220px', top: '220px', width: '240px', height: '70px', fontSize: '30px' }, box, '◀ Resta'), () => { SFX.tap(); o.remove(); });
+      back.className = 'btn green';
+    }, 400);
+  });
+  cl.className = 'btn';
 }
 
 // =====================================================================
