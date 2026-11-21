@@ -600,6 +600,51 @@ function themePick(game) {
 // =====================================================================
 //  MEMORY
 // =====================================================================
+// ---------- voce guida (sintesi vocale del telefono, in italiano) ----------
+const NAMES = {
+  '🐄': 'la mucca', '🐖': 'il maiale', '🐔': 'la gallina', '🐑': 'la pecora', '🐴': 'il cavallo', '🐱': 'il gatto', '🐶': 'il cane',
+  '🦆': "l'anatra", '🐰': 'il coniglio', '🐐': 'la capra',
+  '🚗': 'la macchina', '🚌': "l'autobus", '🚒': 'il camion dei pompieri', '🚑': "l'ambulanza", '🚜': 'il trattore', '✈️': "l'aereo",
+  '🚁': "l'elicottero", '🚢': 'la nave', '🚂': 'il treno', '🚲': 'la bicicletta',
+  '🍎': 'la mela', '🍌': 'la banana', '🍇': "l'uva", '🍐': 'la pera', '🍊': "l'arancia", '🍓': 'la fragola', '🍒': 'le ciliegie',
+  '🍉': "l'anguria", '🍍': "l'ananas", '🍋': 'il limone',
+  '🚀': 'il razzo', '🛸': 'il disco volante', '🪐': 'il pianeta', '🌙': 'la luna', '👩‍🚀': "l'astronauta", '🛰️': 'il satellite',
+  '⭐': 'la stella', '☄️': 'la cometa', '🌍': 'la Terra', '👽': "l'alieno",
+  '🦒': 'la giraffa', '🐘': "l'elefante", '🦁': 'il leone', '🐊': 'il coccodrillo', '🐵': 'la scimmia', '🦓': 'la zebra', '🐻': "l'orso",
+  '🐧': 'il pinguino', '🦛': "l'ippopotamo", '🐯': 'la tigre',
+  '🌼': 'la margherita', '🌷': 'il tulipano', '🌻': 'il girasole', '🌹': 'la rosa', '🌸': 'il fiore di ciliegio', '💐': 'il mazzo di fiori',
+  '🦋': 'la farfalla', '🐞': 'la coccinella', '🌺': "l'ibisco", '🍀': 'il quadrifoglio',
+};
+const PRAISE = ['Brava!', 'Bravissima!', 'Esatto!', 'Che brava!', 'Evviva!', 'Super!'];
+const RETRY = ['Peccato, riprova!', 'Quasi! Riprova!', 'Ops! Riprova!', 'Non sono uguali, riprova!'];
+const pick = a => a[rnd(a.length)];
+const Voice = {
+  on: store('voce') !== 'off',
+  voice: null,
+  ok: 'speechSynthesis' in window,
+  choose() {
+    if (!this.ok) return;
+    const vs = speechSynthesis.getVoices().filter(v => /^it/i.test(v.lang));
+    this.voice = vs.find(v => /alice|federica|paola|elsa|isabella|female|donna/i.test(v.name)) || vs.find(v => v.localService) || vs[0] || null;
+  },
+  say(text) {
+    if (!this.on || !this.ok) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'it-IT'; u.rate = 0.95; u.pitch = 1.25;
+      if (!this.voice) this.choose();
+      if (this.voice) u.voice = this.voice;
+      // abbassa la musica mentre parla
+      if (Music.out && AC) Music.out.gain.setTargetAtTime(0.15, AC.currentTime, 0.1);
+      u.onend = u.onerror = () => { if (Music.out && AC) Music.out.gain.setTargetAtTime(0.5, AC.currentTime, 0.3); };
+      speechSynthesis.speak(u);
+    } catch (e) { /* niente voce: pazienza */ }
+  },
+};
+if (Voice.ok) { Voice.choose(); speechSynthesis.onvoiceschanged = () => Voice.choose(); }
+const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
+
 function memoryScreen(t, nCards) {
   nCards = nCards || +(store('memoryN') || 12);
   bg(t.bg);
@@ -629,14 +674,27 @@ function memoryScreen(t, nCards) {
       if (a.k === b.k) {
         a.classList.add('done'); b.classList.add('done');
         setTimeout(SFX.ok, 200);
-        if (++found === nCards / 2) setTimeout(() => party('BRAVISSIMA!', () => show(memoryScreen, t, nCards), () => show(themePick, memoryScreen)), 900);
+        const all = ++found === nCards / 2;
+        const nome = NAMES[t.items[a.k]];
+        Voice.say(all ? 'Bravissima! Hai trovato tutte le coppie!' : pick(PRAISE) + (nome ? ' ' + capFirst(nome) + '!' : ''));
+        if (all) setTimeout(() => party('BRAVISSIMA!', () => show(memoryScreen, t, nCards), () => show(themePick, memoryScreen)), 900);
       } else {
         busy = true;
-        setTimeout(() => { a.classList.remove('open'); b.classList.remove('open'); busy = false; }, 1100);
+        Voice.say(pick(RETRY));
+        setTimeout(() => { a.classList.remove('open'); b.classList.remove('open'); busy = false; }, 1300);
       }
     });
   });
   backBtn(() => show(themePick, memoryScreen));
+  // voce guida accesa/spenta
+  if (Voice.ok) {
+    const vb = tap(el('div', { left: '262px', top: '700px', width: '170px', height: '56px', fontSize: '24px' }, stage, Voice.on ? '🔊 Voce' : '🔇 Voce'), () => {
+      Voice.on = !Voice.on; store('voce', Voice.on ? 'on' : 'off');
+      vb.innerHTML = Voice.on ? '🔊 Voce' : '🔇 Voce'; vb.className = 'btn ' + (Voice.on ? 'green' : 'blue');
+      SFX.tap(); if (Voice.on) Voice.say('Ciao! Giochiamo!'); else speechSynthesis.cancel();
+    });
+    vb.className = 'btn ' + (Voice.on ? 'green' : 'blue');
+  }
   // scelta difficoltà
   [6, 12, 20].forEach((n, i) => {
     const b = tap(el('div', { left: px(724 + i * 100), top: '700px', width: '90px', height: '56px', fontSize: '24px' }, stage, n), () => {
