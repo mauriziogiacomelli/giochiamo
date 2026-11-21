@@ -508,6 +508,54 @@ function saveCanvas(c, name, scale) {
 // =====================================================================
 //  DIPINGERE CON LE DITA
 // =====================================================================
+// ---------- formine e figure geometriche ----------
+const SHAPES = ['cerchio', 'quadrato', 'triangolo', 'rombo', 'esagono', 'stella', 'cuore', 'luna', 'fiore', 'pesce'];
+function shapePath(x, kind, c, r) {
+  const poly = pts => { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(c + a * r, c + b * r) : x.moveTo(c + a * r, c + b * r)); x.closePath(); x.fill(); };
+  const circle = (a, b, rr) => { x.beginPath(); x.arc(c + a * r, c + b * r, rr * r, 0, Math.PI * 2); x.fill(); };
+  const reg = (n, inner, rot) => {
+    const m = n * (inner ? 2 : 1), p = [];
+    for (let i = 0; i < m; i++) { const ang = rot + i * Math.PI * 2 / m; const k = inner && i % 2 ? inner : 1; p.push([Math.cos(ang) * k, Math.sin(ang) * k]); }
+    return p;
+  };
+  switch (kind) {
+    case 'cerchio': circle(0, 0, 1); break;
+    case 'quadrato': poly([[-.85, -.85], [.85, -.85], [.85, .85], [-.85, .85]]); break;
+    case 'triangolo': poly([[0, -1], [.95, .8], [-.95, .8]]); break;
+    case 'rombo': poly([[0, -1], [.72, 0], [0, 1], [-.72, 0]]); break;
+    case 'esagono': poly(reg(6, 0, 0)); break;
+    case 'stella': poly(reg(5, .45, -Math.PI / 2)); break;
+    case 'cuore':
+      x.beginPath(); x.moveTo(c, c + r * .95);
+      x.bezierCurveTo(c - r * 1.3, c + r * .1, c - r * .75, c - r * 1.05, c, c - r * .45);
+      x.bezierCurveTo(c + r * .75, c - r * 1.05, c + r * 1.3, c + r * .1, c, c + r * .95); x.fill(); break;
+    case 'luna':
+      circle(0, 0, 1); x.globalCompositeOperation = 'destination-out'; circle(.45, -.25, .85); x.globalCompositeOperation = 'source-over'; break;
+    case 'fiore':
+      for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; circle(Math.cos(a) * .55, Math.sin(a) * .55, .45); }
+      circle(0, 0, .4); break;
+    case 'pesce':
+      x.beginPath(); x.ellipse(c - r * .15, c, r * .75, r * .5, 0, 0, Math.PI * 2); x.fill();
+      poly([[.45, 0], [1, -.6], [1, .6]]);
+      x.globalCompositeOperation = 'destination-out'; circle(-.5, -.12, .1); x.globalCompositeOperation = 'source-over'; break;
+  }
+}
+const shapeCache = new Map();
+// forma a pixel netti (niente sfumature), del colore scelto
+function shapeCanvas(kind, d, color) {
+  const key = kind + d + color;
+  if (shapeCache.has(key)) return shapeCache.get(key);
+  const c = document.createElement('canvas'); c.width = c.height = d;
+  const x = c.getContext('2d'); x.fillStyle = '#000';
+  shapePath(x, kind, d / 2, d / 2 - 1);
+  const im = x.getImageData(0, 0, d, d), D = im.data, [r, g, b] = hex2rgb(color);
+  for (let i = 0; i < D.length; i += 4) { const on = D[i + 3] > 127; D[i] = r; D[i + 1] = g; D[i + 2] = b; D[i + 3] = on ? 255 : 0; }
+  x.putImageData(im, 0, 0);
+  shapeCache.set(key, c);
+  return c;
+}
+const SHAPE_SIZE = { 1: 14, 3: 24, 7: 38 };
+
 function paintScreen(t) {
   bg('#ffb3d1');
   // Bottoni grandi per le dita (anche sul cellulare): il foglio è 640x480
@@ -517,7 +565,7 @@ function paintScreen(t) {
   const c = pxCanvas(RW, RH, SC, { left: '0', top: '0' }, frame);
   const x = c.getContext('2d');
   x.fillStyle = '#fff'; x.fillRect(0, 0, RW, RH);
-  let color = '#1a5cff', size = 3, stamp = null;
+  let color = '#1a5cff', size = 3, stamp = null, shape = null;
   const sws = [], tools = [];
   const selectSw = s => { sws.concat(tools).forEach(q => q.classList.remove('sel')); s.classList.add('sel'); };
   // tavolozza: 2 colonne x 8 righe
@@ -525,14 +573,48 @@ function paintScreen(t) {
     const s = el('div', { left: px(12 + (i % 2) * 88), top: px(12 + Math.floor(i / 2) * 93), width: '82px', height: '86px', background: col });
     s.className = 'sw' + (col === color ? ' sel' : '');
     sws.push(s);
-    tap(s, () => { color = col; stamp = null; selectSw(s); SFX.tap(); });
+    tap(s, () => {
+      color = col; stamp = null; SFX.tap();
+      if (shape) { sws.forEach(q => q.classList.remove('sel')); s.classList.add('sel'); drawShapeIcons(); }
+      else selectSw(s);
+    });
   });
   // timbrini: 2 colonne x 5 righe
-  t.items.forEach((e, i) => {
-    const b = el('div', { left: px(856 + (i % 2) * 84), top: px(12 + Math.floor(i / 2) * 92), width: '78px', height: '86px', background: '#fff' });
-    b.className = 'sw'; tools.push(b);
-    spriteImg(e, 64, b, { margin: '10px 5px' });
-    tap(b, () => { stamp = e; selectSw(b); SFX.tap(); });
+  const grid = el('div', { position: 'absolute', left: '856px', top: '92px', width: '162px', height: '460px' });
+  const shapeIcons = [];
+  const eraserRef = { el: null };
+  function drawShapeIcons() {
+    shapeIcons.forEach(({ img, k }) => { img.src = shapeCanvas(k, 32, color).toDataURL(); img.parentNode.style.background = color === '#ffffff' ? '#ccc' : '#fff'; });
+  }
+  function fillGrid(which) {
+    grid.innerHTML = ''; shapeIcons.length = 0;
+    tools.length = 0; if (eraserRef.el) tools.push(eraserRef.el);
+    const list = which === 'forme' ? SHAPES : t.items;
+    list.forEach((e, i) => {
+      const b = el('div', { left: px((i % 2) * 84), top: px(Math.floor(i / 2) * 92), width: '78px', height: '86px', background: '#fff' }, grid);
+      b.className = 'sw'; tools.push(b);
+      if (which === 'forme') {
+        const img = el('img', { width: '60px', height: '60px', margin: '13px 9px' }, b); img.className = 'px'; img.draggable = false;
+        shapeIcons.push({ img, k: e });
+        if (shape === e) b.classList.add('sel');
+        tap(b, () => { shape = e; stamp = null; tools.forEach(q => q.classList.remove('sel')); b.classList.add('sel'); SFX.tap(); });
+      } else {
+        spriteImg(e, 64, b, { margin: '10px 5px' });
+        if (stamp === e) b.classList.add('sel');
+        tap(b, () => { stamp = e; shape = null; selectSw(b); SFX.tap(); });
+      }
+    });
+    drawShapeIcons();
+  }
+  // linguette: timbrini / forme
+  const tabEls = [];
+  [['timbri', t.items[0]], ['forme', null]].forEach(([k, ic], i) => {
+    const tb = el('div', { left: px(856 + i * 84), top: '12px', width: '78px', height: '70px', background: i ? '#fff' : '#ffec3d' });
+    tb.className = 'sw';
+    if (ic) spriteImg(ic, 52, tb, { margin: '6px 10px' });
+    else { const im = el('img', { width: '52px', height: '52px', margin: '6px 10px' }, tb); im.className = 'px'; im.src = shapeCanvas('stella', 26, '#ff2a1a').toDataURL(); }
+    tabEls.push(tb);
+    tap(tb, () => { tabEls.forEach((q, j) => { q.style.background = j === i ? '#ffec3d' : '#fff'; }); fillGrid(k); SFX.flip(); });
   });
   // pennelli + gomma
   const sizes = [[1, 12], [3, 26], [7, 46]];
@@ -547,8 +629,9 @@ function paintScreen(t) {
   });
   const eraser = el('div', { left: '682px', top: '530px', width: '150px', height: '100px', background: '#fff', fontSize: '60px',
     display: 'flex', alignItems: 'center', justifyContent: 'center' }, stage, '🧽');
-  eraser.className = 'sw'; tools.push(eraser);
-  tap(eraser, () => { color = '#ffffff'; stamp = null; selectSw(eraser); pickSize(sb[2], 7); SFX.tap(); });
+  eraser.className = 'sw'; tools.push(eraser); eraserRef.el = eraser;
+  fillGrid('timbri');
+  tap(eraser, () => { color = '#ffffff'; stamp = null; shape = null; selectSw(eraser); pickSize(sb[2], 7); drawShapeIcons(); SFX.tap(); });
 
   const back = tap(el('div', { left: '196px', top: '648px', width: '300px', height: '104px', fontSize: '36px' }, stage, '◀ Indietro'), () => { SFX.tap(); show(homeScreen); });
   back.className = 'btn';
@@ -556,7 +639,7 @@ function paintScreen(t) {
     SFX.no(); x.fillStyle = '#fff'; x.fillRect(0, 0, RW, RH);
   });
   clear.className = 'btn blue';
-  const save = tap(el('div', { left: '856px', top: '480px', width: '162px', height: '272px', fontSize: '34px', flexDirection: 'column' }, stage, '<span style="font-size:64px">💾</span>Salva'), () => { SFX.ok(); saveCanvas(c, 'disegno', 6); });
+  const save = tap(el('div', { left: '856px', top: '568px', width: '162px', height: '184px', fontSize: '34px', flexDirection: 'column' }, stage, '<span style="font-size:64px">💾</span>Salva'), () => { SFX.ok(); saveCanvas(c, 'disegno', 6); });
   save.className = 'btn green';
 
   const dot = (px_, py_) => { const o = Math.floor(size / 2); x.fillRect(px_ - o, py_ - o, size, size); };
@@ -570,6 +653,7 @@ function paintScreen(t) {
     ev.preventDefault();
     const [px_, py_] = canvasPos(c, ev);
     if (stamp) { x.drawImage(sprite(stamp, 32), px_ - 16, py_ - 16); snd([[700 + rnd(400), .06]]); return; }
+    if (shape) { const d = SHAPE_SIZE[size]; x.drawImage(shapeCanvas(shape, d, color), px_ - (d >> 1), py_ - (d >> 1)); snd([[500 + rnd(500), .05], [900, .04]]); return; }
     try { c.setPointerCapture(ev.pointerId); } catch (e) {}
     x.fillStyle = color; dot(px_, py_); last.set(ev.pointerId, [px_, py_]);
   });
