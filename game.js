@@ -1537,39 +1537,64 @@ const SEEK = [
     } },
 ];
 
+const fmtTime = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 function seekPick() {
   stage.classList.add('modern');
   bg('radial-gradient(circle at 30% 30%, #fff7e6 0%, #ffe3f1 45%, #d9ccff 100%)');
   el('div', { left: '0', right: '0', top: '40px', textAlign: 'center', fontSize: '50px' }, stage, '👀 Trova i particolari').className = 'm-label';
+  const hard = store('seekLevel') === 'hard';
   SEEK.forEach((sc, i) => {
-    const c = el('div', { position: 'absolute', left: px(70 + (i % 2) * 450), top: px(140 + Math.floor(i / 2) * 270), width: '420px', height: '240px', borderRadius: '32px',
+    const c = el('div', { position: 'absolute', left: px(70 + (i % 2) * 450), top: px(130 + Math.floor(i / 2) * 270), width: '420px', height: '240px', borderRadius: '32px',
       overflow: 'hidden', cursor: 'pointer', boxShadow: '0 14px 30px rgba(110,50,160,.25)', transition: 'transform .12s' });
     c.innerHTML = `<svg viewBox="0 0 1000 546" width="420" height="230" preserveAspectRatio="xMidYMid slice">${sc.bg()}</svg>`;
-    const lab = el('div', { position: 'absolute', left: '0', right: '0', bottom: '0', height: '64px', background: 'rgba(255,255,255,.88)',
+    const best = hard && store('seekBest-' + sc.id);
+    el('div', { position: 'absolute', left: '0', right: '0', bottom: '0', height: '64px', background: 'rgba(255,255,255,.88)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '32px', fontWeight: '800', color: '#5a189a' }, c,
-      `<span style="font-size:38px">${sc.icon}</span>${sc.name}`);
+      `<span style="font-size:38px">${sc.icon}</span>${sc.name}` + (best ? `<span style="font-size:22px;color:#b07a00">🏆 ${fmtTime(+best)}</span>` : ''));
     tap(c, () => { SFX.flip(); show(seekScreen, sc); });
   });
   const back = tap(el('div', { left: '20px', top: '692px', width: '170px', height: '58px' }, stage, '← Indietro'), () => { SFX.tap(); show(homeScreen); });
   back.className = 'm-btn';
+  // livello: facile (bambini) o difficile (genitori)
+  [['easy', '😊 Facile', 520, 190], ['hard', '🧠 Difficile (genitori)', 724, 280]].forEach(([lv, label, x, w]) => {
+    const b = tap(el('div', { left: px(x), top: '692px', width: px(w), height: '58px', fontSize: '22px' }, stage, label), () => {
+      store('seekLevel', lv); SFX.tap(); show(seekPick);
+    });
+    b.className = 'm-btn' + ((lv === 'hard') === hard ? ' primary' : '');
+  });
 }
 
 function seekScreen(sc) {
   stage.classList.add('modern');
   bg('linear-gradient(#f6efff,#e9dcff)');
-  const N = 5, W0 = 1000, H0 = 546;
-  // posiziona gli oggetti, tutti diversi e senza sovrapporsi
+  const hard = store('seekLevel') === 'hard';
+  // facile: 5 particolari grandi; difficile: 8 particolari piccoli, tanti oggetti in più e lenti molto ingrandite
+  const L = hard ? { N: 8, min: 28, var: 14, gap: 6, view: 58, jit: 34, lens: 92, step: 101, fill: 46 }
+                 : { N: 5, min: 50, var: 22, gap: 22, view: 140, jit: 30, lens: 150, step: 162, fill: 0 };
+  const W0 = 1000, H0 = 546, N = L.N;
   const placed = [];
-  for (const [e, z] of shuffle(sc.items.slice())) {
+  const put = (e, z) => {
     const [x0, y0, x1, y1] = sc.zones[z];
     for (let k = 0; k < 80; k++) {
-      const size = 50 + rnd(22), x = x0 + rnd(x1 - x0), y = y0 + rnd(y1 - y0);
-      if (placed.every(o => Math.hypot(o.x - x, o.y - y) > (o.size + size) / 2 + 22)) { placed.push({ e, x, y, size, rot: rnd(25) - 12 }); break; }
+      const size = L.min + rnd(L.var), x = x0 + rnd(x1 - x0), y = y0 + rnd(y1 - y0);
+      if (placed.every(o => Math.hypot(o.x - x, o.y - y) > (o.size + size) / 2 + L.gap)) {
+        placed.push({ e, x, y, size, rot: rnd(hard ? 60 : 25) - (hard ? 30 : 12) }); return true;
+      }
     }
-  }
+    return false;
+  };
+  // ogni oggetto una volta sola
+  for (const [e, z] of shuffle(sc.items.slice())) put(e, z);
   const targets = shuffle(placed.slice()).slice(0, N).map(o => Object.assign(o, { found: false,
     // il "particolare": un pezzetto della scena intorno all'oggetto, un po' spostato
-    vx: Math.max(0, Math.min(W0 - 140, o.x - 70 + rnd(30) - 15)), vy: Math.max(0, Math.min(H0 - 140, o.y - 70 + rnd(30) - 15)) }));
+    vx: Math.max(0, Math.min(W0 - L.view, o.x - L.view / 2 + rnd(L.jit) - L.jit / 2)),
+    vy: Math.max(0, Math.min(H0 - L.view, o.y - L.view / 2 + rnd(L.jit) - L.jit / 2)) }));
+  // difficile: tanti oggetti "di disturbo" (solo copie di quelli che NON sono da trovare)
+  if (L.fill) {
+    const tset = new Set(targets.map(t => t.e));
+    const others = sc.items.filter(([e]) => !tset.has(e));
+    for (let k = 0; k < 300 && placed.length < L.fill; k++) { const [e, z] = others[rnd(others.length)]; put(e, z); }
+  }
   const shadow = `<filter id="sk-sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".25"/></filter>`;
   const content = sc.bg().replace('<defs>', '<defs>' + shadow) +
     placed.map(o => `<text x="${o.x}" y="${o.y}" font-size="${o.size}" text-anchor="middle" dominant-baseline="central" filter="url(#sk-sh)" transform="rotate(${o.rot} ${o.x} ${o.y})">${o.e}</text>`).join('');
@@ -1580,42 +1605,68 @@ function seekScreen(sc) {
   const marks = scene.querySelector('#sk-marks');
 
   // le lenti con i particolari
+  const lensTop = hard ? 612 : 584;
   const lenses = targets.map((t, i) => {
-    const l = el('div', { position: 'absolute', left: px(200 + i * 162), top: '584px', width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden',
-      border: '6px solid #fff', boxSizing: 'border-box', boxShadow: '0 8px 20px rgba(110,50,160,.3)', background: '#fff', transition: 'transform .2s, opacity .3s' });
-    l.innerHTML = `<svg viewBox="${t.vx} ${t.vy} 140 140" width="138" height="138">${content}</svg>`;
+    const l = el('div', { position: 'absolute', left: px(198 + i * L.step), top: px(lensTop), width: px(L.lens), height: px(L.lens), borderRadius: '50%', overflow: 'hidden',
+      border: (hard ? 4 : 6) + 'px solid #fff', boxSizing: 'border-box', boxShadow: '0 8px 20px rgba(110,50,160,.3)', background: '#fff', transition: 'transform .2s, opacity .3s' });
+    const inner = L.lens - (hard ? 8 : 12);
+    l.innerHTML = `<svg viewBox="${t.vx} ${t.vy} ${L.view} ${L.view}" width="${inner}" height="${inner}">${content}</svg>`;
     return l;
   });
-  let done = 0, misses = 0;
-  Voice.say('Trova i particolari!');
+
+  // cronometro (solo difficile)
+  let secs = 0, timer = null, timerEl = null, misses = 0;
+  if (hard) {
+    timerEl = el('div', { left: '852px', top: '24px', width: '150px', height: '50px', fontSize: '22px', background: 'rgba(255,255,255,.9)' }, stage);
+    timerEl.className = 'm-btn';
+    const upd = () => { timerEl.textContent = '⏱ ' + fmtTime(secs) + (misses ? '  ✖' + misses : ''); };
+    upd();
+    timer = setInterval(() => { secs++; upd(); }, 1000);
+    cleanup = () => clearInterval(timer);
+    timerEl.upd = upd;
+  }
+
+  let done = 0;
+  Voice.say(hard ? 'Livello difficile. Pronti? Via!' : 'Trova i particolari!');
   tap(scene, ev => {
     const r = scene.getBoundingClientRect();
     const x = (ev.clientX - r.left) / r.width * W0, y = (ev.clientY - r.top) / r.height * H0;
-    const i = targets.findIndex(t => !t.found && Math.hypot(t.x - x, t.y - y) < t.size * 0.75);
+    const i = targets.findIndex(t => !t.found && Math.hypot(t.x - x, t.y - y) < Math.max(24, t.size * 0.78));
     if (i < 0) {
       SFX.no();
       marks.insertAdjacentHTML('beforeend', `<text x="${x}" y="${y}" font-size="34" text-anchor="middle" dominant-baseline="central" class="sk-miss">✖️</text>`);
       const m = marks.lastChild; setTimeout(() => m.remove(), 700);
-      if (++misses % 3 === 0) Voice.say(pick(['Guarda bene!', 'Cerca ancora!', 'Non è qui, riprova!']));
+      misses++;
+      if (hard) timerEl.upd();
+      else if (misses % 3 === 0) Voice.say(pick(['Guarda bene!', 'Cerca ancora!', 'Non è qui… riprova!']));
       return;
     }
     const t = targets[i]; t.found = true; done++;
     SFX.ok();
-    marks.insertAdjacentHTML('beforeend', `<circle cx="${t.x}" cy="${t.y}" r="${t.size * 0.8}" fill="none" stroke="#2ec4b6" stroke-width="7" class="sk-hit"/>`);
+    marks.insertAdjacentHTML('beforeend', `<circle cx="${t.x}" cy="${t.y}" r="${Math.max(26, t.size * 0.8)}" fill="none" stroke="#2ec4b6" stroke-width="${hard ? 5 : 7}" class="sk-hit"/>`);
     const l = lenses[i];
     l.style.opacity = '.55'; l.style.transform = 'scale(.9)';
-    el('div', { position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '70px', color: '#2ec4b6',
+    el('div', { position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: hard ? '50px' : '70px', color: '#2ec4b6',
       textShadow: '0 2px 0 #fff, 0 0 8px #fff' }, l, '✔');
-    const nome = NAMES[t.e];
     if (done === N) {
-      Voice.say('Bravissima! Hai trovato tutti i particolari!');
-      setTimeout(() => party('BRAVISSIMA!', () => show(seekScreen, sc), () => show(seekPick)), 900);
-    } else Voice.say(pick(PRAISE) + (nome ? ' ' + capFirst(nome) + '!' : ''));
+      if (hard) {
+        clearInterval(timer);
+        const key = 'seekBest-' + sc.id, best = +(store(key) || 0), record = !best || secs < best;
+        if (record) store(key, String(secs));
+        Voice.say(`Bravissimi! Tutti trovati in ${secs} secondi!` + (record ? ' Nuovo record!' : ''));
+        setTimeout(() => party((record ? '🏆 RECORD ' : '⏱ ') + fmtTime(secs), () => show(seekScreen, sc), () => show(seekPick)), 900);
+      } else {
+        Voice.say('Bravissima! Hai trovato tutti i particolari!');
+        setTimeout(() => party('BRAVISSIMA!', () => show(seekScreen, sc), () => show(seekPick)), 900);
+      }
+    } else if (hard) Voice.say(pick(['Trovato!', 'Sì!', 'Bene!']));
+    else { const nome = NAMES[t.e]; Voice.say(pick(PRAISE) + (nome ? ' ' + capFirst(nome) + '!' : '')); }
   });
 
-  const back = tap(el('div', { left: '16px', top: '584px', width: '170px', height: '70px', fontSize: '22px' }, stage, '← Indietro'), () => { SFX.tap(); show(seekPick); });
+  const bh = hard ? 66 : 70;
+  const back = tap(el('div', { left: '16px', top: px(lensTop - (hard ? 28 : 0)), width: '170px', height: px(bh), fontSize: '22px' }, stage, '← Indietro'), () => { SFX.tap(); show(seekPick); });
   back.className = 'm-btn';
-  const again = tap(el('div', { left: '16px', top: '666px', width: '170px', height: '70px', fontSize: '22px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(seekScreen, sc); });
+  const again = tap(el('div', { left: '16px', top: px(lensTop - (hard ? 28 : 0) + bh + 12), width: '170px', height: px(bh), fontSize: '22px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(seekScreen, sc); });
   again.className = 'm-btn primary';
 }
 
