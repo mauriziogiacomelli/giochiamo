@@ -10,7 +10,7 @@ let LANG = (() => { try { return localStorage.getItem('lingua') || 'it'; } catch
 const EN = {
   'Giochiamo!': "Let's play!", 'Colorare disegni': 'Coloring', 'Dipingere con le dita': 'Finger painting',
   'Trova le differenze': 'Spot the difference', 'Gioco dei vestiti': 'Dress up', 'Trova i particolari': 'Find the details',
-  'Fattoria': 'Farm', 'Veicoli': 'Vehicles', 'Frutta': 'Fruit', 'Spazio': 'Space', 'Fiori': 'Flowers',
+  'Fattoria': 'Farm', 'Veicoli': 'Vehicles', 'Frutta': 'Fruit', 'Spazio': 'Space', 'Fiori': 'Flowers', 'Fantasia': 'Fantasy',
   'Scegli la musica': 'Choose the music', 'Carillon delle stelle': 'Star music box', 'Ninna nanna': 'Lullaby',
   'Onde del mare': 'Ocean waves', 'Nuvole': 'Clouds', 'Silenzio': 'Silence', 'Fatto': 'Done', 'Musica': 'Music',
   'Indietro': 'Back', 'Ancora!': 'Again!', 'Ricarica': 'Reload', 'Chiudi': 'Close', 'Ciao ciao!': 'Bye bye!',
@@ -54,6 +54,8 @@ const THEMES = [
     items: ['🚀', '🛸', '🪐', '🌙', '👩‍🚀', '🛰️', '⭐', '☄️', '🌍', '👽'] },
   { id: 'zoo', name: 'Zoo', frame: '#22cc33', bg: '#ffd966',
     items: ['🦒', '🐘', '🦁', '🐊', '🐵', '🦓', '🐻', '🐧', '🦛', '🐯'] },
+  { id: 'fantasia', name: 'Fantasia', frame: '#a020f0', bg: '#e0c3fc',
+    items: ['🏠', '👸', '🦕', '🦄', '🏰', '🌈', '⛄', '🎂', '🐉', '🧁'] },
   { id: 'fiori', name: 'Fiori', frame: '#ff66cc', bg: '#c9f7c9',
     items: ['🌼', '🌷', '🌻', '🌹', '🌸', '💐', '🦋', '🐞', '🌺', '🍀'] },
 ];
@@ -470,6 +472,15 @@ function drawScene(x, w, h, theme, seed = 7) {
       R('#ffcc33', 0, h * 0.62, w, h * 0.38);
       for (let i = 0; i < w; i += 5) R('#cc8800', i, h * 0.62 + 4 + (i * 13 % 25), 1, 4);
       break;
+    case 'fantasia':
+      R('#d9c2ff', 0, 0, w, h);
+      for (let i = 0; i < w * h / 140; i++) R('#ffffff', Math.floor(r() * w), Math.floor(r() * h * 0.5), 1, 1);
+      ['#ff2a1a', '#ff8c00', '#ffe81a', '#22cc33', '#1a5cff', '#a020f0'].forEach((col, k) => {
+        for (let a = 0; a <= 180; a += 2) { const rad = w * 0.42 - k * 3, t = a * Math.PI / 180; R(col, Math.round(w / 2 + Math.cos(t) * rad), Math.round(h * 0.62 - Math.sin(t) * rad), 3, 3); }
+      });
+      R('#ff9ad8', 0, h * 0.62, w, h * 0.38);
+      for (let i = 0; i < w; i += 7) R('#ffffff', i, h * 0.62 + 5 + (i * 11 % 24), 2, 2);
+      break;
     case 'fiori':
       R('#bfe9ff', 0, 0, w, h); R('#ffe81a', w - 16, 4, 10, 10);
       R('#5ad15a', 0, h * 0.55, w, h * 0.45);
@@ -522,7 +533,7 @@ const randomTheme = () => THEMES[rnd(THEMES.length)];
 // =====================================================================
 const GAMES = [
   { name: 'Memory', icon: null, x: 80, y: 110, go: () => show(themePick, memoryScreen) },
-  { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 100, go: () => show(colorModern) },
+  { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 100, go: () => show(themePick, colorScreen) },
   { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 110, go: () => show(paintModern) },
   { name: 'Trova le differenze', icon: '🔍', x: 80, y: 404, go: () => show(diffPick) },
   { name: 'Gioco dei vestiti', icon: '👗', x: 392, y: 394, go: () => show(dressScreen) },
@@ -610,11 +621,11 @@ function homeScreen() {
 // =====================================================================
 function themePick(game) {
   bg('linear-gradient(#2fd38b,#18b070)');
-  const pos = [[90, 50], [392, 50], [694, 50], [90, 380], [392, 380], [694, 380]];
+  const pos = [[40, 40], [290, 40], [540, 40], [790, 40], [165, 345], [415, 345], [665, 345]];
   THEMES.forEach((t, i) => {
-    const tile = el('div', { left: px(pos[i][0]), top: px(pos[i][1]), width: '240px', height: '240px', borderColor: t.frame }, stage);
+    const tile = el('div', { left: px(pos[i][0]), top: px(pos[i][1]), width: '220px', height: '220px', borderColor: t.frame }, stage);
     tile.className = 'tile';
-    const c = pxCanvas(80, 80, 2.75, { left: '0', top: '0' }, tile);
+    const c = pxCanvas(80, 80, 2.5, { left: '0', top: '0' }, tile);
     const x = c.getContext('2d');
     const spots = [[6, 22], [44, 16], [10, 50], [46, 48]];
     const paint = () => {
@@ -647,6 +658,8 @@ const NAMES = {
   '🐧': 'il pinguino', '🦛': "l'ippopotamo", '🐯': 'la tigre',
   '🌼': 'la margherita', '🌷': 'il tulipano', '🌻': 'il girasole', '🌹': 'la rosa', '🌸': 'il fiore di ciliegio', '💐': 'il mazzo di fiori',
   '🦋': 'la farfalla', '🐞': 'la coccinella', '🌺': "l'ibisco", '🍀': 'il quadrifoglio',
+  '🏠': 'la casa', '👸': 'la principessa', '🦕': 'il dinosauro', '🦄': "l'unicorno", '🏰': 'il castello', '🌈': "l'arcobaleno",
+  '⛄': 'il pupazzo di neve', '🎂': 'la torta', '🐉': 'il drago', '🧁': 'il pasticcino',
 };
 const NAMES_EN = {
   '🐄': 'the cow', '🐖': 'the pig', '🐔': 'the hen', '🐑': 'the sheep', '🐴': 'the horse', '🐱': 'the cat', '🐶': 'the dog',
@@ -668,6 +681,8 @@ const NAMES_EN = {
   '🦩': 'the flamingo', '👒': 'the hat', '🖼️': 'the picture', '⏰': 'the alarm clock', '🌈': 'the rainbow', '🧸': 'the teddy bear',
   '🧩': 'the puzzle', '📚': 'the books', '🎁': 'the present', '👟': 'the shoe', '🧦': 'the socks', '🖍️': 'the crayons', '🎨': 'the paint palette',
   '🪀': 'the yo-yo', '📖': 'the book', '🌟': 'the little star', '🔭': 'the telescope', '🦔': 'the hedgehog', '🌳': 'the tree',
+  '🏠': 'the house', '👸': 'the princess', '🦕': 'the dinosaur', '🦄': 'the unicorn', '🏰': 'the castle',
+  '⛄': 'the snowman', '🎂': 'the cake', '🐉': 'the dragon', '🧁': 'the cupcake',
 };
 const PRAISE_EN = ['Good job!', 'Well done!', 'Great!', 'Awesome!', 'Super!', 'Hooray!'];
 const RETRY_EN = ['Almost… try again!', 'Oops… try again!', 'Not a match… try again!', 'So close… try again!'];
@@ -2024,8 +2039,32 @@ const COLOR_SETS = [
   ] },
 ];
 
+// disegna i mattoncini vettoriali (400x400) dentro il disegno retrò (64x64)
+function drawDSL(x, items) {
+  x.save(); x.scale(64 / 400, 64 / 400); x.lineWidth = 12.5; x.lineJoin = 'round'; x.lineCap = 'round';
+  for (const it of items) {
+    const a = it.a; let p;
+    if (it.tag === 'path') p = new Path2D(a.d);
+    else {
+      p = new Path2D();
+      if (it.tag === 'circle') p.arc(a.cx, a.cy, a.r, 0, Math.PI * 2);
+      if (it.tag === 'ellipse') { const m = /rotate\(([-\d.]+)/.exec(a.transform || ''); p.ellipse(a.cx, a.cy, a.rx, a.ry, (m ? +m[1] : 0) * Math.PI / 180, 0, Math.PI * 2); }
+      if (it.tag === 'rect') { const rr = Math.min(a.rx || 0, a.width / 2, a.height / 2); if (p.roundRect) p.roundRect(a.x, a.y, a.width, a.height, rr); else p.rect(a.x, a.y, a.width, a.height); }
+    }
+    if (it.k === 'f') { x.fillStyle = '#fff'; x.fill(p); x.strokeStyle = '#000'; x.stroke(p); }
+    if (it.k === 'l') { x.strokeStyle = '#000'; x.stroke(p); }
+    if (it.k === 'd') { x.fillStyle = '#000'; x.fill(p); }
+    if (it.k === 'w') { x.fillStyle = '#fff'; x.fill(p); }
+  }
+  x.restore();
+}
 const COL_PALETTE = ['#ff4f81', '#ff8fb1', '#ffc2d4', '#ff5d5d', '#ff9f1c', '#ffd23f', '#fff3b0', '#7bd389', '#2ec4b6', '#b8f2e6', '#7fd3f7', '#4d96ff',
   '#7b5cff', '#c77dff', '#e0c3fc', '#a0663c', '#d9a066', '#f6c9a8', '#8a5532', '#ffffff', '#c9c9c9', '#6c757d', '#2b2d42', '#111111'];
+
+[['🏠', 'casa'], ['👸', 'principessa'], ['🦕', 'dinosauro']].forEach(([emoji, id]) => {
+  const pic = COLOR_SETS.find(s => s.id === 'fantasia').pics.find(q => q.id === id);
+  ART[emoji] = x => drawDSL(x, pic.f());
+});
 
 function colorSVG(pic, fills, w, h, extra = '') {
   const items = pic.f();
