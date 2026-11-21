@@ -15,7 +15,7 @@ const EN = {
   'Onde del mare': 'Ocean waves', 'Nuvole': 'Clouds', 'Silenzio': 'Silence', 'Fatto': 'Done', 'Musica': 'Music',
   'Indietro': 'Back', 'Ancora!': 'Again!', 'Ricarica': 'Reload', 'Chiudi': 'Close', 'Ciao ciao!': 'Bye bye!',
   "Per uscire usa il tasto Home<br>o scorri verso l'alto dal basso.": 'To exit, press the Home button<br>or swipe up from the bottom.',
-  'Resta': 'Stay', 'Annulla': 'Undo', 'Gomma': 'Eraser', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
+  'Resta': 'Stay', 'Annulla': 'Undo', 'Gomma': 'Eraser', 'Pennello': 'Brush', 'Arcobaleno': 'Rainbow', 'Brillantini': 'Glitter', 'Timbri': 'Stamps', 'Forme': 'Shapes', 'Sfondo': 'Background', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
   'MODELLO': 'ORIGINAL', 'COPIA': 'COPY', 'Originale': 'Original', 'Copia': 'Copy', 'Trovate:': 'Found:', 'BRAVISSIMA!': 'WELL DONE!', 'HAI TROVATO TUTTO!': 'YOU FOUND THEM ALL!',
   'Gonna e pantaloni': 'Skirts & pants', 'Capelli': 'Hair', 'Accessori': 'Accessories', 'Maglia': 'Tops', 'Pantaloni': 'Pants',
   'Scarpe': 'Shoes', 'Occhiali': 'Glasses', 'Occhi': 'Eyes', 'Pelle': 'Skin', 'Colori': 'Colors', 'Bambina': 'Girl', 'Bambino': 'Boy',
@@ -523,7 +523,7 @@ const randomTheme = () => THEMES[rnd(THEMES.length)];
 const GAMES = [
   { name: 'Memory', icon: null, x: 80, y: 110, go: () => show(themePick, memoryScreen) },
   { name: 'Colorare disegni', icon: '🖍️', x: 392, y: 100, go: () => show(colorModern) },
-  { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 110, go: () => show(paintScreen, MIX) },
+  { name: 'Dipingere con le dita', icon: '🎨', x: 704, y: 110, go: () => show(paintModern) },
   { name: 'Trova le differenze', icon: '🔍', x: 80, y: 404, go: () => show(diffPick) },
   { name: 'Gioco dei vestiti', icon: '👗', x: 392, y: 394, go: () => show(dressScreen) },
   { name: 'Trova i particolari', icon: '👀', x: 704, y: 404, go: () => show(seekPick) },
@@ -2003,6 +2003,25 @@ const COLOR_SETS = [
       cL('M181.3,75 Q150,25 125,37.5 M218.8,75 Q250,25 275,37.5'), fE(32, 18, 9, 8), fE(32, 38, 19, 19), cL('M200,125 V356'),
       fE(24, 30, 4, 4), fE(40, 30, 4, 4), fE(22, 43, 3.6, 3.6), fE(42, 43, 3.6, 3.6)] },
   ] },
+  { id: 'fantasia', icon: '🏠', pics: [
+    { id: 'casa', f: () => [cC(62, 62, 32), cP('M0,350 Q200,325 400,350 V400 H0 Z'), cR(256, 92, 36, 70, 4),
+      cR(90, 182, 220, 170, 6), cP('M66,192 L200,78 L334,192 Z'), cR(110, 212, 54, 52, 8), cL('M137,212 V264 M110,238 H164'), cR(236, 212, 54, 52, 8), cL('M263,212 V264 M236,238 H290'),
+      cR(174, 262, 52, 90, 26), cD(cC(214, 310, 5)), cC(184, 132, 18),
+      ...[[40, 372], [110, 380], [300, 378], [365, 370]].map(([x, y]) => cC(x, y, 11))] },
+    { id: 'principessa', f: () => [cP('M128,150 C118,58 282,58 272,150 L288,272 Q200,292 112,272 Z'),
+      cR(126, 232, 24, 74, 12), cR(250, 232, 24, 74, 12), cC(138, 308, 13), cC(262, 308, 13), cC(150, 228, 24), cC(250, 228, 24),
+      cR(188, 196, 24, 22, 8), cP('M160,212 Q200,204 240,212 L236,286 L164,286 Z'), cR(158, 280, 84, 15, 7),
+      cP('M164,294 L236,294 Q302,330 322,386 Q200,406 78,386 Q98,330 164,294 Z'),
+      ...[[146, 352], [200, 364], [254, 352]].map(([x, y]) => cP(`M${x},${y + 12} C${x - 18},${y} ${x - 12},${y - 12} ${x},${y - 4} C${x + 12},${y - 12} ${x + 18},${y} ${x},${y + 12} Z`)),
+      cC(200, 140, 62), cE(166, 166, 11, 7), cE(234, 166, 11, 7), ...cEye(178, 145, 8), ...cEye(222, 145, 8), cL('M188,174 Q200,184 212,174'),
+      cP('M138,136 C140,78 260,78 262,136 C246,110 226,100 200,108 C174,100 154,110 138,136 Z'),
+      cP('M154,88 L161,44 L182,70 L200,36 L218,70 L239,44 L246,88 Q200,80 154,88 Z'), cC(200, 64, 7)] },
+    { id: 'dinosauro', f: () => [...[[140, 196], [185, 182], [230, 186], [272, 202]].map(([x, y]) => cP(`M${x - 22},${y + 24} L${x},${y - 22} L${x + 22},${y + 24} Z`)),
+      cP('M104,252 Q36,270 14,330 Q66,306 124,296 Z'), cR(128, 292, 42, 84, 16), cR(236, 292, 42, 84, 16),
+      cP('M276,236 Q292,140 296,96 L342,96 Q348,150 324,256 Z'), cE(206, 262, 122, 76), cE(212, 300, 82, 28),
+      cC(176, 240, 13), cC(236, 228, 10), cC(152, 276, 8), cR(158, 306, 42, 80, 16), cR(262, 306, 42, 80, 16),
+      cE(328, 92, 48, 32), ...cEye(338, 82, 7), cD(cC(364, 96, 3)), cL('M322,108 Q338,118 356,108'), cL('M10,392 H390')] },
+  ] },
 ];
 
 const COL_PALETTE = ['#ff4f81', '#ff8fb1', '#ffc2d4', '#ff5d5d', '#ff9f1c', '#ffd23f', '#fff3b0', '#7bd389', '#2ec4b6', '#b8f2e6', '#7fd3f7', '#4d96ff',
@@ -2089,7 +2108,7 @@ function colorModern(setId, picId) {
   });
   const thumbs = {};
   set.pics.forEach((p, i) => {
-    const t = el('div', { left: px(12 + (i % 2) * 110), top: px(128 + Math.floor(i / 2) * 112), width: '104px', height: '104px' }, side);
+    const t = el('div', { left: px(12 + (i % 2) * 110), top: px(12 + Math.ceil(COLOR_SETS.length / 3) * 56 + Math.floor(i / 2) * 112), width: '104px', height: '104px' }, side);
     t.className = 'm-thumb' + (p.id === pic.id ? ' on' : '');
     let f = {};
     try { f = p.id === pic.id ? fills : JSON.parse(store('colora-' + p.id) || '{}') || {}; } catch (e) { f = {}; }
@@ -2100,6 +2119,171 @@ function colorModern(setId, picId) {
   function refreshThumb() { thumbs[pic.id].innerHTML = colorSVG(pic, fills, 104, 104); }
   const back = tap(el('div', { left: '15px', top: '670px', width: '210px', height: '60px', fontSize: '22px' }, side, '← Indietro'), () => { SFX.tap(); show(homeScreen); });
   back.className = 'm-btn';
+}
+
+// =====================================================================
+//  DIPINGERE CON LE DITA (grafica moderna)
+// =====================================================================
+const PAINT_STAMPS = ['🦒', '🐱', '🐶', '🐰', '🦄', '🦋', '🐞', '🌸', '🌈', '⭐', '❤️', '🍓', '🚀', '🚗', '☀️', '🎈', '🍦', '👑', '🐠', '🌻'];
+function paintModern() {
+  stage.classList.add('modern');
+  bg('radial-gradient(circle at 30% 30%, #fff7e6 0%, #ffe3f1 45%, #d9ccff 100%)');
+  const DW = 600, DH = 590, Q = 1.5;            // area di disegno e risoluzione interna
+  let color = '#4d96ff', size = 1, tool = 'pennello', item = null, hue = 0, bgColor = '#ffffff';
+  const SIZES = [9, 22, 44], STAMP = [70, 120, 190];
+
+  // --- tavolozza ---
+  const pal = el('div', { left: '12px', top: '12px', width: '136px', height: '744px' }); pal.className = 'm-panel';
+  const sws = COL_PALETTE.map((col, i) => {
+    const s = el('div', { left: px(14 + (i % 2) * 60), top: px(14 + Math.floor(i / 2) * 60), background: col }, pal);
+    s.className = 'm-sw' + (col === color ? ' on' : '');
+    tap(s, () => {
+      color = col; sws.forEach(q => q.classList.remove('on')); s.classList.add('on'); SFX.tap();
+      if (tool === 'gomma' || tool === 'arcobaleno') setTool('pennello');
+      if (tool === 'forme') fillGrid();
+    });
+    return s;
+  });
+
+  // --- foglio ---
+  const card = el('div', { left: '160px', top: '12px', width: '600px', height: '590px', overflow: 'hidden', background: bgColor }); card.className = 'm-panel';
+  const c = el('canvas', { position: 'absolute', left: '0', top: '0', width: px(DW), height: px(DH), touchAction: 'none', imageRendering: 'auto' }, card);
+  c.width = DW * Q; c.height = DH * Q;
+  const x = c.getContext('2d');
+  x.lineCap = 'round'; x.lineJoin = 'round';
+
+  // --- annulla: copie del foglio ---
+  const history = [];
+  const snap = () => {
+    const k = document.createElement('canvas'); k.width = c.width; k.height = c.height; k.getContext('2d').drawImage(c, 0, 0);
+    history.push({ k, bg: bgColor }); if (history.length > 10) history.shift();
+  };
+  const pos = ev => { const r = c.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * c.width, (ev.clientY - r.top) / r.height * c.height]; };
+
+  const strokeStyle = () => {
+    if (tool === 'arcobaleno') { hue = (hue + 6) % 360; return `hsl(${hue},90%,60%)`; }
+    return color;
+  };
+  const sparkle = (px_, py_) => {
+    const n = 2 + size * 2, R = SIZES[size] * Q * 1.2;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, d = Math.random() * R, sx = px_ + Math.cos(a) * d, sy = py_ + Math.sin(a) * d;
+      const col = Math.random() < .3 ? '#ffffff' : COL_PALETTE[rnd(15)], s = (2 + Math.random() * 4) * Q;
+      x.fillStyle = col; x.beginPath(); x.arc(sx, sy, s, 0, Math.PI * 2); x.fill();
+      if (Math.random() < .35) { x.strokeStyle = '#fff8c4'; x.lineWidth = 1.5 * Q; x.beginPath(); x.moveTo(sx - s * 2.2, sy); x.lineTo(sx + s * 2.2, sy); x.moveTo(sx, sy - s * 2.2); x.lineTo(sx, sy + s * 2.2); x.stroke(); }
+    }
+  };
+  const stampAt = (px_, py_) => {
+    const S = STAMP[size] * Q;
+    if (tool === 'timbri') {
+      x.save(); x.translate(px_, py_); x.rotate((Math.random() - .5) * .3);
+      x.font = `${S}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(item, 0, S * .05); x.restore();
+    } else {
+      // la forma si prepara a parte (luna e pesce hanno dei "buchi" che non devono cancellare il disegno)
+      const k = document.createElement('canvas'); k.width = k.height = Math.ceil(S);
+      const q = k.getContext('2d'); q.fillStyle = color; shapePath(q, item, S / 2, S / 2 - 1);
+      x.drawImage(k, px_ - S / 2, py_ - S / 2);
+    }
+    snd([[500 + rnd(500), .05], [900, .04]]);
+  };
+
+  // --- disegno con le dita (anche più dita insieme) ---
+  const pts = new Map();
+  c.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    const [px_, py_] = pos(ev);
+    snap();
+    if (tool === 'timbri' || tool === 'forme') { stampAt(px_, py_); return; }
+    if (tool === 'sfondo') { return; }
+    try { c.setPointerCapture(ev.pointerId); } catch (e) {}
+    pts.set(ev.pointerId, { lx: px_, ly: py_, mx: px_, my: py_ });
+    if (tool === 'brillantini') { sparkle(px_, py_); return; }
+    x.globalCompositeOperation = tool === 'gomma' ? 'destination-out' : 'source-over';
+    x.fillStyle = strokeStyle(); x.beginPath(); x.arc(px_, py_, SIZES[size] * Q / 2, 0, Math.PI * 2); x.fill();
+    x.globalCompositeOperation = 'source-over';
+  });
+  c.addEventListener('pointermove', ev => {
+    const p = pts.get(ev.pointerId); if (!p) return;
+    const [px_, py_] = pos(ev);
+    if (tool === 'brillantini') { if (Math.hypot(px_ - p.lx, py_ - p.ly) > 10 * Q) { sparkle(px_, py_); p.lx = px_; p.ly = py_; } return; }
+    // tratto morbido: curva passando per i punti medi
+    const mx = (p.lx + px_) / 2, my = (p.ly + py_) / 2;
+    x.globalCompositeOperation = tool === 'gomma' ? 'destination-out' : 'source-over';
+    x.strokeStyle = strokeStyle(); x.lineWidth = SIZES[size] * Q;
+    x.beginPath(); x.moveTo(p.mx, p.my); x.quadraticCurveTo(p.lx, p.ly, mx, my); x.stroke();
+    x.globalCompositeOperation = 'source-over';
+    p.mx = mx; p.my = my; p.lx = px_; p.ly = py_;
+  });
+  const end = ev => pts.delete(ev.pointerId);
+  c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
+
+  // --- strumenti (a destra) ---
+  const side = el('div', { left: '772px', top: '12px', width: '240px', height: '744px' }); side.className = 'm-panel';
+  const TOOLS = [['pennello', '✏️', 'Pennello'], ['arcobaleno', '🌈', 'Arcobaleno'], ['brillantini', '✨', 'Brillantini'], ['gomma', '🧽', 'Gomma'],
+    ['timbri', '🦒', 'Timbri'], ['forme', '⭐', 'Forme'], ['sfondo', '🪣', 'Sfondo']];
+  const toolEls = {};
+  TOOLS.forEach(([k, ic, name], i) => {
+    const b = el('div', { left: px(12 + (i % 3) * 74), top: px(12 + Math.floor(i / 3) * 74), width: '68px', height: '68px', fontSize: '30px',
+      flexDirection: 'column', gap: '0', lineHeight: '1' }, side, `${ic}<span style="font-size:11px;font-weight:800;color:#5a189a;margin-top:3px">${name}</span>`);
+    b.className = 'm-tab';
+    toolEls[k] = b;
+    tap(b, () => {
+      if (k === 'sfondo') {   // colora subito tutto lo sfondo
+        snap(); bgColor = color; card.style.background = bgColor; SFX.fill(); return;
+      }
+      setTool(k); SFX.tap();
+    });
+  });
+  // grandezza
+  const sizeEls = [14, 26, 42].map((d, i) => {
+    const b = el('div', { left: px(12 + i * 74), top: '242px', width: '68px', height: '56px' }, side);
+    b.className = 'm-tab' + (i === size ? ' on' : '');
+    el('div', { width: px(d), height: px(d), borderRadius: '50%', background: '#5a189a' }, b);
+    tap(b, () => { size = i; sizeEls.forEach(q => q.classList.remove('on')); b.classList.add('on'); SFX.tap(); });
+    return b;
+  });
+  const grid = el('div', { position: 'absolute', left: '12px', top: '312px', width: '216px', height: '340px' }, side);
+  function fillGrid() {
+    grid.innerHTML = '';
+    if (tool !== 'timbri' && tool !== 'forme') {
+      el('div', { position: 'absolute', left: '0', right: '0', top: '40px', textAlign: 'center', fontSize: '60px', opacity: '.9' }, grid,
+        { pennello: '✏️', arcobaleno: '🌈', brillantini: '✨', gomma: '🧽' }[tool]);
+      return;
+    }
+    const list = tool === 'timbri' ? PAINT_STAMPS : SHAPES;
+    if (!list.includes(item)) item = list[0];
+    list.forEach((e, i) => {
+      const b = el('div', { left: px((i % 4) * 54), top: px(Math.floor(i / 4) * 56), width: '50px', height: '50px', fontSize: '30px' }, grid);
+      b.className = 'm-tab' + (e === item ? ' on' : '');
+      if (tool === 'timbri') b.textContent = e;
+      else b.innerHTML = `<img src="${(() => { const k = document.createElement('canvas'); k.width = k.height = 64; const q = k.getContext('2d'); q.fillStyle = color === '#ffffff' ? '#c9c9c9' : color; shapePath(q, e, 32, 30); return k.toDataURL(); })()}" width="34" height="34">`;
+      tap(b, () => { item = e; SFX.tap(); fillGrid(); });
+    });
+  }
+  function setTool(k) {
+    tool = k;
+    Object.entries(toolEls).forEach(([n, b]) => b.classList.toggle('on', n === k));
+    fillGrid();
+  }
+  setTool('pennello');
+
+  // --- in basso ---
+  const btn = (left, w, label, fn, cls = '') => { const b = tap(el('div', { left: px(left), top: '616px', width: px(w), height: '64px', fontSize: '22px' }, stage, label), fn); b.className = 'm-btn ' + cls; return b; };
+  btn(160, 145, '↩ Annulla', () => {
+    const h = history.pop(); if (!h) return;
+    x.clearRect(0, 0, c.width, c.height); x.drawImage(h.k, 0, 0); bgColor = h.bg; card.style.background = bgColor; SFX.tap();
+  });
+  btn(315, 145, '🗑 Cancella', () => { snap(); x.clearRect(0, 0, c.width, c.height); bgColor = '#ffffff'; card.style.background = bgColor; SFX.no(); });
+  btn(470, 140, '💾 Salva', () => {
+    const k = document.createElement('canvas'); k.width = c.width; k.height = c.height;
+    const q = k.getContext('2d'); q.fillStyle = bgColor; q.fillRect(0, 0, k.width, k.height); q.drawImage(c, 0, 0);
+    saveCanvas(k, 'disegno', 1); SFX.ok();
+  }, 'primary');
+  const back = tap(el('div', { left: '15px', top: '670px', width: '210px', height: '60px', fontSize: '22px' }, side, '← Indietro'), () => { SFX.tap(); show(homeScreen); });
+  back.className = 'm-btn';
+  el('div', { position: 'absolute', left: '160px', top: '692px', width: '600px', textAlign: 'center', fontSize: '20px', color: '#7b2cbf', fontWeight: '700' }, stage,
+    LANG === 'en' ? 'Draw with your finger ✋ Try the rainbow 🌈' : 'Disegna con il dito ✋ Prova l\'arcobaleno 🌈');
 }
 
 // ---------- avvio ----------

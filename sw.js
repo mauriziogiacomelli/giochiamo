@@ -1,5 +1,5 @@
 // Service worker: rende il gioco installabile e giocabile anche offline.
-const CACHE = 'giochiamo-v36';
+const CACHE = 'giochiamo-v37';
 const VOICE_CACHE = 'giochiamo-voce-1';   // le voci registrate: si scaricano una volta sola
 const FILES = ['./', 'index.html', 'game.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
