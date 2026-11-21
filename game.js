@@ -510,8 +510,9 @@ function saveCanvas(c, name, scale) {
 // =====================================================================
 function paintScreen(t) {
   bg('#ffb3d1');
-  const RW = 192, RH = 144, SC = 4;
-  const frame = el('div', { position: 'absolute', left: '128px', top: '16px', width: px(RW * SC), height: px(RH * SC),
+  // Bottoni grandi per le dita (anche sul cellulare): il foglio è 640x480
+  const RW = 160, RH = 120, SC = 4;
+  const frame = el('div', { position: 'absolute', left: '196px', top: '16px', width: px(RW * SC), height: px(RH * SC),
     border: '8px solid #1fb890', boxShadow: '0 0 0 5px #222, 8px 8px 0 rgba(0,0,0,.35)' });
   const c = pxCanvas(RW, RH, SC, { left: '0', top: '0' }, frame);
   const x = c.getContext('2d');
@@ -519,34 +520,43 @@ function paintScreen(t) {
   let color = '#1a5cff', size = 3, stamp = null;
   const sws = [], tools = [];
   const selectSw = s => { sws.concat(tools).forEach(q => q.classList.remove('sel')); s.classList.add('sel'); };
+  // tavolozza: 2 colonne x 8 righe
   PALETTE.forEach((col, i) => {
-    const s = el('div', { left: px(16 + (i % 2) * 50), top: px(16 + Math.floor(i / 2) * 72), width: '44px', height: '64px', background: col });
+    const s = el('div', { left: px(12 + (i % 2) * 88), top: px(12 + Math.floor(i / 2) * 93), width: '82px', height: '86px', background: col });
     s.className = 'sw' + (col === color ? ' sel' : '');
     sws.push(s);
     tap(s, () => { color = col; stamp = null; selectSw(s); SFX.tap(); });
   });
-  // timbrini col tema
+  // timbrini: 2 colonne x 5 righe
   t.items.forEach((e, i) => {
-    const b = el('div', { left: px(918 + (i % 2) * 52), top: px(16 + Math.floor(i / 2) * 72), width: '48px', height: '64px', background: '#fff' });
+    const b = el('div', { left: px(856 + (i % 2) * 84), top: px(12 + Math.floor(i / 2) * 92), width: '78px', height: '86px', background: '#fff' });
     b.className = 'sw'; tools.push(b);
-    spriteImg(e, 40, b, { margin: '10px 1px' });
+    spriteImg(e, 64, b, { margin: '10px 5px' });
     tap(b, () => { stamp = e; selectSw(b); SFX.tap(); });
   });
-  // pennelli
-  const sizes = [[1, 10], [3, 20], [7, 34]];
+  // pennelli + gomma
+  const sizes = [[1, 12], [3, 26], [7, 46]];
   const sb = [];
+  const pickSize = (b, s) => { size = s; sb.forEach(q => q.classList.remove('sel')); b.classList.add('sel'); };
   sizes.forEach(([s, d], i) => {
-    const b = el('div', { left: px(260 + i * 84), top: '690px', width: '74px', height: '66px', background: '#fff' });
+    const b = el('div', { left: px(196 + i * 162), top: '530px', width: '150px', height: '100px', background: '#fff' });
     b.className = 'sw' + (s === size ? ' sel' : '');
-    el('div', { width: px(d), height: px(d), background: '#000', margin: px((60 - d) / 2) + ' auto 0' }, b);
+    el('div', { width: px(d), height: px(d), background: '#000', borderRadius: '2px', margin: px((94 - d) / 2) + ' auto 0' }, b);
     sb.push(b);
-    tap(b, () => { size = s; sb.forEach(q => q.classList.remove('sel')); b.classList.add('sel'); SFX.tap(); if (stamp) { stamp = null; selectSw(sws[PALETTE.indexOf(color)]); } });
+    tap(b, () => { pickSize(b, s); SFX.tap(); if (stamp) { stamp = null; selectSw(sws[PALETTE.indexOf(color)] || sws[0]); } });
   });
-  const clear = tap(el('div', { left: '532px', top: '690px', width: '210px', height: '66px' }, stage, '🗑 Cancella'), () => {
+  const eraser = el('div', { left: '682px', top: '530px', width: '150px', height: '100px', background: '#fff', fontSize: '60px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center' }, stage, '🧽');
+  eraser.className = 'sw'; tools.push(eraser);
+  tap(eraser, () => { color = '#ffffff'; stamp = null; selectSw(eraser); pickSize(sb[2], 7); SFX.tap(); });
+
+  const back = tap(el('div', { left: '196px', top: '648px', width: '300px', height: '104px', fontSize: '36px' }, stage, '◀ Indietro'), () => { SFX.tap(); show(homeScreen); });
+  back.className = 'btn';
+  const clear = tap(el('div', { left: '512px', top: '648px', width: '320px', height: '104px', fontSize: '36px' }, stage, '🗑 Cancella'), () => {
     SFX.no(); x.fillStyle = '#fff'; x.fillRect(0, 0, RW, RH);
   });
   clear.className = 'btn blue';
-  const save = tap(el('div', { left: '760px', top: '690px', width: '160px', height: '66px' }, stage, '💾 Salva'), () => { SFX.ok(); saveCanvas(c, 'disegno', 6); });
+  const save = tap(el('div', { left: '856px', top: '480px', width: '162px', height: '272px', fontSize: '34px', flexDirection: 'column' }, stage, '<span style="font-size:64px">💾</span>Salva'), () => { SFX.ok(); saveCanvas(c, 'disegno', 6); });
   save.className = 'btn green';
 
   const dot = (px_, py_) => { const o = Math.floor(size / 2); x.fillRect(px_ - o, py_ - o, size, size); };
@@ -570,7 +580,6 @@ function paintScreen(t) {
   });
   const end = ev => last.delete(ev.pointerId);
   c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
-  backBtn(() => show(homeScreen));
 }
 
 // =====================================================================
