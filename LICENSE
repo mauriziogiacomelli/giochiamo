@@ -19,14 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----------------------------------------------------------------------------
-
-Third-party content NOT covered by this license:
-
-- voce/ : the voice audio files were generated with Microsoft neural
-  text-to-speech voices (it-IT-IsabellaNeural, en-US-AvaNeural). They are
-  subject to Microsoft's terms and are not licensed under MIT.
-- Emoji are drawn at runtime with the device's own emoji font (Segoe UI
-  Emoji, Apple Color Emoji, Noto Color Emoji); no emoji artwork is included
-  in this repository.
