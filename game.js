@@ -1728,14 +1728,15 @@ function diffScreen(sc) {
   stage.classList.add('modern');
   bg('linear-gradient(#f6efff,#e9dcff)');
   const hard = store('diffLevel') === 'hard';
-  const W0 = 1000, H0 = 546;
+  const W0 = 1000, H0 = 546, VX = 230, VW = 540;   // si usa la parte centrale della scena (quasi quadrata)
   const L = hard ? { N: 8, min: 34, var: 14, gap: 8, fill: 40, hit: 36, ring: 38 }
                  : { N: 5, min: 74, var: 20, gap: 26, fill: 0, hit: 60, ring: 62 };
   // --- oggetti nella scena ---
   const placed = [];
   const free = (x, y, size) => placed.every(o => Math.hypot(o.x - x, o.y - y) > (o.size + size) / 2 + L.gap);
   const spot = (z, size) => {
-    const [x0, y0, x1, y1] = sc.zones[z];
+    const [zx0, y0, zx1, y1] = sc.zones[z];
+    const x0 = Math.max(zx0, VX + 40), x1 = Math.min(zx1, VX + VW - 40);
     for (let k = 0; k < 80; k++) { const x = x0 + rnd(x1 - x0), y = y0 + rnd(y1 - y0); if (free(x, y, size)) return [x, y]; }
     return null;
   };
@@ -1791,27 +1792,23 @@ function diffScreen(sc) {
   const draw = list => sc.bg().replace('<defs>', '<defs>' + defs) + list.filter(o => !o.gone).map(o =>
     `<g transform="translate(${o.x} ${o.y}) rotate(${o.rot}) scale(${o.flip ? -1 : 1} 1)"><text font-size="${o.size}" text-anchor="middle" dominant-baseline="central" filter="url(#${o.hue ? 'dh-hue' : 'dh-sh'})">${o.e}</text></g>`).join('');
 
-  // --- le due scene, una sopra l'altra ---
-  const PW = 622, PH = 340;
-  const panels = [[12, 'Originale', placed], [400, 'Copia', copy]].map(([top, label, list]) => {
-    const d = el('div', { position: 'absolute', left: '12px', top: px(top), width: px(PW), height: px(PH), borderRadius: '24px', overflow: 'hidden',
+  // --- le due scene, affiancate (sinistra / destra) ---
+  const PW = 500, PH = 506;
+  const panels = [[8, 'Originale', placed], [516, 'Copia', copy]].map(([left, label, list]) => {
+    const d = el('div', { position: 'absolute', left: px(left), top: '82px', width: px(PW), height: px(PH), borderRadius: '24px', overflow: 'hidden',
       boxShadow: '0 12px 26px rgba(110,50,160,.25)' });
-    d.innerHTML = `<svg viewBox="0 0 ${W0} ${H0}" width="${PW}" height="${PH}" preserveAspectRatio="none">${draw(list)}<g class="dh-marks"></g></svg>`;
+    d.innerHTML = `<svg viewBox="${VX} 0 ${VW} ${H0}" width="${PW}" height="${PH}" preserveAspectRatio="none">${draw(list)}<g class="dh-marks"></g></svg>`;
     el('div', { position: 'absolute', left: '12px', top: '10px', padding: '4px 14px', borderRadius: '999px', background: 'rgba(255,255,255,.85)',
       fontSize: '18px', fontWeight: '800', color: '#5a189a' }, d, label);
     return d;
   });
-  // linea "=" tra le due scene
-  el('div', { position: 'absolute', left: '12px', top: '354px', width: px(PW), height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '30px', color: '#9d4edd' }, stage, '⇅');
-
-  // --- colonna di destra ---
-  el('div', { left: '650px', top: '24px', width: '362px', textAlign: 'center', fontSize: '34px', lineHeight: '40px' }, stage, '🔍 Trova le differenze').className = 'm-label';
-  const stars = el('div', { position: 'absolute', left: '650px', top: '130px', width: '362px', textAlign: 'center', fontSize: hard ? '40px' : '52px',
+  // titolo in alto, stelline e cronometro in basso al centro
+  el('div', { left: '0', right: '0', top: '18px', textAlign: 'center', fontSize: '38px' }, stage, '🔍 Trova le differenze').className = 'm-label';
+  const stars = el('div', { position: 'absolute', left: '262px', top: '604px', width: '500px', textAlign: 'center', fontSize: hard ? '40px' : '52px',
     letterSpacing: '4px', color: '#ffb703', textShadow: '0 3px 0 #fff' });
-  let done = 0, misses = 0, secs = 0, timer = null;
-  const timerEl = hard ? el('div', { left: '716px', top: '300px', width: '230px', height: '60px', fontSize: '26px', background: 'rgba(255,255,255,.9)' }, stage) : null;
+  const timerEl = hard ? el('div', { left: '397px', top: '680px', width: '230px', height: '58px', fontSize: '26px', background: 'rgba(255,255,255,.9)' }, stage) : null;
   if (timerEl) timerEl.className = 'm-btn';
+  let done = 0, misses = 0, secs = 0, timer = null;
   const upd = () => {
     stars.innerHTML = '★'.repeat(done) + '<span style="color:#d9ccff">' + '★'.repeat(N - done) + '</span>';
     if (timerEl) timerEl.textContent = '⏱ ' + fmtTime(secs) + (misses ? '  ✖' + misses : '');
@@ -1822,7 +1819,7 @@ function diffScreen(sc) {
   Voice.say(hard ? 'Livello difficile. Pronti? Via!' : 'Trova le differenze!');
   panels.forEach(pn => tap(pn, ev => {
     const r = pn.getBoundingClientRect();
-    const x = (ev.clientX - r.left) / r.width * W0, y = (ev.clientY - r.top) / r.height * H0;
+    const x = VX + (ev.clientX - r.left) / r.width * VW, y = (ev.clientY - r.top) / r.height * H0;
     const d = diffs.find(d => !d.found && Math.hypot(d.x - x, d.y - y) < L.hit);
     if (!d) {
       SFX.no(); misses++; upd();
@@ -1850,9 +1847,9 @@ function diffScreen(sc) {
     else Voice.praise(d.e);
   }));
 
-  const again = tap(el('div', { left: '680px', top: '560px', width: '300px', height: '78px', fontSize: '26px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(diffScreen, sc); });
+  const again = tap(el('div', { left: '786px', top: '612px', width: '230px', height: '128px', fontSize: '28px' }, stage, '🔄 Nuova'), () => { SFX.flip(); show(diffScreen, sc); });
   again.className = 'm-btn primary';
-  const back = tap(el('div', { left: '680px', top: '656px', width: '300px', height: '78px', fontSize: '26px' }, stage, '← Indietro'), () => { SFX.tap(); show(diffPick); });
+  const back = tap(el('div', { left: '8px', top: '612px', width: '230px', height: '128px', fontSize: '28px' }, stage, '← Indietro'), () => { SFX.tap(); show(diffPick); });
   back.className = 'm-btn';
 }
 
