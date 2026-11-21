@@ -120,21 +120,39 @@ const CUSTOM = {
     ],
   },
 };
+// Animazione della linguaccia: la lingua esce, resta fuori, rientra in bocca.
+function tongueFrame(maxRow) {
+  // tiene la lingua solo fino a maxRow; il resto torna muso (sopra) o collo (sotto)
+  return CUSTOM['🦒'].map.map((row, y) => {
+    if (y <= maxRow) return row;
+    return row.replace(/[PR]/g, y <= 24 ? 'M' : 'Y');
+  });
+}
+const TONGUE = { fuori: tongueFrame(99), meta: tongueFrame(25), dentro: tongueFrame(22) };
+// rendo arrotondata la punta quando la lingua è a metà
+TONGUE.meta = TONGUE.meta.map((row, y) => y === 25 ? row.replace(/YP/, 'YY').replace(/PY(?!.*PY)/, 'YY') : row);
+CUSTOM['🦒'].frames = [TONGUE.dentro, TONGUE.dentro, TONGUE.meta, TONGUE.fuori, TONGUE.fuori, TONGUE.fuori, TONGUE.meta];
+const ANIM_STEPS = 7;          // fotogrammi del ciclo
+let animFrame = 0;             // fotogramma corrente (avanza da solo)
+
 const customCache = new Map();
-function customCanvas(emoji) {
-  if (customCache.has(emoji)) return customCache.get(emoji);
-  const { map, colors } = CUSTOM[emoji];
+function customCanvas(emoji, frame = 0) {
+  const key = emoji + frame;
+  if (customCache.has(key)) return customCache.get(key);
+  const { map, colors, frames } = CUSTOM[emoji];
+  const m = frames ? frames[frame % frames.length] : map;
   const c = document.createElement('canvas'); c.width = c.height = 32;
   const x = c.getContext('2d');
-  map.forEach((row, y) => [...row].forEach((ch, xx) => { if (colors[ch]) { x.fillStyle = colors[ch]; x.fillRect(xx, y, 1, 1); } }));
-  customCache.set(emoji, c);
+  m.forEach((row, y) => [...row].forEach((ch, xx) => { if (colors[ch]) { x.fillStyle = colors[ch]; x.fillRect(xx, y, 1, 1); } }));
+  customCache.set(key, c);
   return c;
 }
+const isAnimated = emoji => !!(CUSTOM[emoji] && CUSTOM[emoji].frames);
 // disegna un soggetto (emoji o disegno personalizzato) riempiendo un canvas res x res
-function drawSubject(x, emoji, res, scale) {
+function drawSubject(x, emoji, res, scale, frame = 0) {
   if (CUSTOM[emoji]) {
     x.imageSmoothingEnabled = false;
-    x.drawImage(customCanvas(emoji), 0, 0, res, res);
+    x.drawImage(customCanvas(emoji, frame), 0, 0, res, res);
     return;
   }
   x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -144,12 +162,14 @@ function drawSubject(x, emoji, res, scale) {
 
 // ---------- sprite pixel-art dagli emoji ----------
 const spriteCache = new Map();
-function sprite(emoji, res = 32) {
-  const key = emoji + res;
+function sprite(emoji, res = 32, frame) {
+  if (frame === undefined) frame = isAnimated(emoji) ? animFrame : 0;
+  frame = isAnimated(emoji) ? frame % ANIM_STEPS : 0;
+  const key = emoji + res + '/' + frame;
   if (spriteCache.has(key)) return spriteCache.get(key);
   const c = document.createElement('canvas'); c.width = c.height = res;
   const x = c.getContext('2d');
-  drawSubject(x, emoji, res, 0.78);
+  drawSubject(x, emoji, res, 0.78, frame);
   const im = x.getImageData(0, 0, res, res), d = im.data;
   const solid = new Uint8Array(res * res);
   for (let i = 0; i < res * res; i++) {
@@ -171,12 +191,27 @@ function sprite(emoji, res = 32) {
   spriteCache.set(key, c);
   return c;
 }
+const urlCache = new Map();
+function spriteURL(emoji, frame) {
+  const key = emoji + '/' + frame;
+  if (!urlCache.has(key)) urlCache.set(key, sprite(emoji, 32, frame).toDataURL());
+  return urlCache.get(key);
+}
 function spriteImg(emoji, size, parent, css) {
-  const c = sprite(emoji, 32);
   const img = el('img', Object.assign({ width: px(size), height: px(size) }, css || {}), parent);
-  img.className = 'px'; img.src = c.toDataURL(); img.draggable = false;
+  img.className = 'px'; img.draggable = false;
+  img.src = spriteURL(emoji, isAnimated(emoji) ? animFrame : 0);
+  if (isAnimated(emoji)) { img.dataset.anim = emoji; }
   return img;
 }
+// orologio delle animazioni: aggiorna le immagini animate e i canvas registrati
+let animHooks = [];
+function onAnim(fn) { animHooks.push(fn); }
+setInterval(() => {
+  animFrame = (animFrame + 1) % ANIM_STEPS;
+  document.querySelectorAll('img[data-anim]').forEach(img => { img.src = spriteURL(img.dataset.anim, animFrame); });
+  animHooks.forEach(fn => { try { fn(); } catch (e) {} });
+}, 220);
 function pxCanvas(res_w, res_h, scale, css, parent) {
   const c = el('canvas', Object.assign({ position: 'absolute', width: px(res_w * scale), height: px(res_h * scale) }, css || {}), parent);
   c.width = res_w; c.height = res_h;
@@ -229,6 +264,7 @@ let cleanup = null;
 function show(fn, ...args) {
   if (cleanup) { try { cleanup(); } catch (e) {} cleanup = null; }
   stage.innerHTML = '';
+  animHooks = [];
   fn(...args);
 }
 function backBtn(onTap, label = 'Indietro') {
@@ -267,9 +303,13 @@ function homeScreen() {
     tile.className = 'tile';
     const c = pxCanvas(80, 80, 2.75, { left: '0', top: '0' }, tile);
     const x = c.getContext('2d');
-    drawScene(x, 80, 80, t, i + 3);
     const spots = [[6, 22], [44, 16], [10, 50], [46, 48]];
-    spots.forEach(([sx, sy], k) => x.drawImage(sprite(t.items[k * 2], 32), sx, sy, 32, 32));
+    const paint = () => {
+      drawScene(x, 80, 80, t, i + 3);
+      spots.forEach(([sx, sy], k) => x.drawImage(sprite(t.items[k * 2], 32), sx, sy, 32, 32));
+    };
+    paint();
+    if (spots.some((_, k) => isAnimated(t.items[k * 2]))) onAnim(paint);
     el('div', { position: 'absolute', left: '0', right: '0', bottom: '-56px', textAlign: 'center' }, tile,
       `<span class="title" style="font-size:30px">${t.name}</span>`);
     tap(tile, () => { SFX.flip(); show(themeScreen, t); });
@@ -587,6 +627,7 @@ function diffScreen(t) {
     if (diffs.every(d => d.found)) setTimeout(() => party('HAI TROVATO TUTTO!', () => show(diffScreen, t), () => show(themeScreen, t)), 700);
   }
   draw();
+  if (items.concat(copy).some(o => isAnimated(o.e))) onAnim(draw);
   backBtn(() => show(themeScreen, t));
 }
 
