@@ -616,8 +616,8 @@ const NAMES = {
   '🌼': 'la margherita', '🌷': 'il tulipano', '🌻': 'il girasole', '🌹': 'la rosa', '🌸': 'il fiore di ciliegio', '💐': 'il mazzo di fiori',
   '🦋': 'la farfalla', '🐞': 'la coccinella', '🌺': "l'ibisco", '🍀': 'il quadrifoglio',
 };
-const PRAISE = ['Brava!', 'Bravissima!', 'Esatto!', 'Che brava!', 'Evviva!', 'Super!'];
-const RETRY = ['Peccato, riprova!', 'Quasi! Riprova!', 'Ops! Riprova!', 'Non sono uguali, riprova!'];
+const PRAISE = ['Brava!', 'Bravissima!', 'Che brava!', 'Molto bene!', 'Ben fatto!', 'Evviva!'];
+const RETRY = ['Quasi… riprova!', 'Peccato… prova ancora!', 'Non sono uguali… riprova!', 'Ops… riprova!'];
 const pick = a => a[rnd(a.length)];
 const Voice = {
   on: store('voce') !== 'off',
@@ -626,14 +626,19 @@ const Voice = {
   choose() {
     if (!this.ok) return;
     const vs = speechSynthesis.getVoices().filter(v => /^it/i.test(v.lang));
-    this.voice = vs.find(v => /alice|federica|paola|elsa|isabella|female|donna/i.test(v.name)) || vs.find(v => v.localService) || vs[0] || null;
+    // voce femminile e più naturale possibile; niente voci maschili
+    const male = /cosimo|luca|diego|giorgio|paolo|roberto|male\b|uomo/i;
+    const female = /alice|federica|paola|elsa|isabella|emma|bianca|carla|silvia|google italiano|female|donna/i;
+    const quality = /natural|neural|premium|enhanced|migliorat|siri|online/i;
+    const score = v => (female.test(v.name) ? 4 : 0) + (quality.test(v.name) ? 3 : 0) + (v.localService ? 1 : 0) - (male.test(v.name) ? 10 : 0);
+    this.voice = vs.sort((a, b) => score(b) - score(a))[0] || null;
   },
   say(text) {
     if (!this.on || !this.ok) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'it-IT'; u.rate = 0.95; u.pitch = 1.25;
+      u.lang = 'it-IT'; u.rate = 0.82; u.pitch = 1.15; u.volume = 0.9;   // calma e dolce
       if (!this.voice) this.choose();
       if (this.voice) u.voice = this.voice;
       // abbassa la musica mentre parla
