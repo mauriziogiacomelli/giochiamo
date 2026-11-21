@@ -641,14 +641,8 @@ const ART = (() => {
       x.beginPath(); x.moveTo(25, 22); x.quadraticCurveTo(26, 34, 32, 39); x.moveTo(39, 22); x.quadraticCurveTo(38, 34, 32, 39); x.stroke();
     },
     '🌻': x => { // girasole
-      stem(x, 32, 36, 63); leaf(x, 32, 54, -1, 18); leaf(x, 32, 48, 1, 18);
-      for (let i = 0; i < 12; i++) {
-        const a = i * Math.PI / 6, c = Math.cos, s = Math.sin;
-        x.beginPath(); x.moveTo(32 + c(a - .28) * 9, 24 + s(a - .28) * 9);
-        x.quadraticCurveTo(32 + c(a) * 16, 24 + s(a) * 16, 32 + c(a) * 21, 24 + s(a) * 21);
-        x.quadraticCurveTo(32 + c(a) * 16, 24 + s(a) * 16, 32 + c(a + .28) * 9, 24 + s(a + .28) * 9);
-        x.fill(); x.stroke();
-      }
+      stem(x, 32, 36, 63); leaf(x, 32, 56, -1, 18); leaf(x, 32, 50, 1, 18);
+      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; E(x, 32 + Math.cos(a) * 15.5, 24 + Math.sin(a) * 15.5, 3.8, 7.5, a + Math.PI / 2); }
       E(x, 32, 24, 10.5, 10.5); E(x, 32, 24, 5, 5);
     },
     '🌹': x => { // rosa
@@ -664,19 +658,14 @@ const ART = (() => {
     '🌸': x => { // fiore di ciliegio
       for (let i = 0; i < 5; i++) {
         const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
-        E(x, 32 + Math.cos(a) * 13, 32 + Math.sin(a) * 13, 11, 11);
+        E(x, 32 + Math.cos(a) * 14, 32 + Math.sin(a) * 14, 11, 11);
       }
-      for (let i = 0; i < 5; i++) {
-        const a = -Math.PI / 2 + i * Math.PI * 2 / 5, ox = 32 + Math.cos(a) * 23, oy = 32 + Math.sin(a) * 23;
-        x.beginPath(); x.moveTo(ox + Math.cos(a + 1.6) * 2.5, oy + Math.sin(a + 1.6) * 2.5); x.lineTo(32 + Math.cos(a) * 19, 32 + Math.sin(a) * 19);
-        x.lineTo(ox + Math.cos(a - 1.6) * 2.5, oy + Math.sin(a - 1.6) * 2.5); x.stroke();
-      }
-      E(x, 32, 32, 7, 7);
+      E(x, 32, 32, 8, 8);
     },
     '💐': x => { // vaso di fiori
-      x.beginPath(); x.moveTo(24, 40); x.lineTo(20, 22); x.moveTo(32, 40); x.lineTo(32, 16); x.moveTo(40, 40); x.lineTo(44, 22); x.stroke();
+      x.beginPath(); x.moveTo(24, 40); x.lineTo(17, 22); x.moveTo(32, 40); x.lineTo(32, 16); x.moveTo(40, 40); x.lineTo(47, 22); x.stroke();
       leaf(x, 28, 36, -1, 12); leaf(x, 36, 34, 1, 12);
-      smallFlower(x, 19, 19, 5); smallFlower(x, 32, 13, 5.5); smallFlower(x, 45, 19, 5);
+      smallFlower(x, 16, 18, 6.5); smallFlower(x, 32, 11, 6.5); smallFlower(x, 48, 18, 6.5);
       x.beginPath(); x.moveTo(21, 46); x.lineTo(43, 46); x.lineTo(40, 62); x.lineTo(24, 62); x.closePath(); x.fill(); x.stroke();
       x.beginPath(); x.rect(18, 40, 28, 6); x.fill(); x.stroke();
     },
@@ -693,7 +682,7 @@ const ART = (() => {
       E(x, 32, 18, 9, 8);
       E(x, 32, 38, 19, 19);
       x.beginPath(); x.moveTo(32, 20); x.lineTo(32, 57); x.stroke();
-      E(x, 24, 30, 4, 4); E(x, 40, 30, 4, 4); E(x, 22, 43, 3.6, 3.6); E(x, 42, 43, 3.6, 3.6); E(x, 27, 51, 2.8, 2.8); E(x, 37, 51, 2.8, 2.8);
+      E(x, 24, 30, 4, 4); E(x, 40, 30, 4, 4); E(x, 22, 43, 3.6, 3.6); E(x, 42, 43, 3.6, 3.6);
     },
   };
 })();
