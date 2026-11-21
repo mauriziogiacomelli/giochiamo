@@ -29,6 +29,8 @@ const THEMES = [
     items: ['🚀', '🛸', '🪐', '🌙', '👩‍🚀', '🛰️', '⭐', '☄️', '🌍', '👽'] },
   { id: 'zoo', name: 'Zoo', frame: '#22cc33', bg: '#ffd966',
     items: ['🦒', '🐘', '🦁', '🐊', '🐵', '🦓', '🐻', '🐧', '🦛', '🐯'] },
+  { id: 'fiori', name: 'Fiori', frame: '#ff66cc', bg: '#c9f7c9',
+    items: ['🌼', '🌷', '🌻', '🌹', '🌸', '💐', '🦋', '🐞', '🌺', '🍀'] },
 ];
 
 const PALETTE = ['#000000', '#ffffff', '#ff2a1a', '#ff8c00', '#ffe81a', '#22cc33', '#00e0e0', '#1a5cff',
@@ -443,6 +445,14 @@ function drawScene(x, w, h, theme, seed = 7) {
       R('#ffcc33', 0, h * 0.62, w, h * 0.38);
       for (let i = 0; i < w; i += 5) R('#cc8800', i, h * 0.62 + 4 + (i * 13 % 25), 1, 4);
       break;
+    case 'fiori':
+      R('#bfe9ff', 0, 0, w, h); R('#ffe81a', w - 16, 4, 10, 10);
+      R('#5ad15a', 0, h * 0.55, w, h * 0.45);
+      for (let i = 0; i < w * h / 160; i++) {
+        const fx = Math.floor(r() * w), fy = Math.floor(h * 0.58 + r() * h * 0.4);
+        R(['#ff66cc', '#ffffff', '#ffe81a', '#ff2a1a'][i % 4], fx, fy, 2, 2); R('#ffe81a', fx, fy, 1, 1);
+      }
+      break;
   }
 }
 
@@ -533,7 +543,7 @@ function homeScreen() {
 // =====================================================================
 function themePick(game) {
   bg('linear-gradient(#2fd38b,#18b070)');
-  const pos = [[90, 70], [392, 50], [694, 70], [240, 370], [544, 370]];
+  const pos = [[90, 50], [392, 50], [694, 50], [90, 380], [392, 380], [694, 380]];
   THEMES.forEach((t, i) => {
     const tile = el('div', { left: px(pos[i][0]), top: px(pos[i][1]), width: '240px', height: '240px', borderColor: t.frame }, stage);
     tile.className = 'tile';
@@ -605,7 +615,102 @@ function memoryScreen(t, nCards) {
 // =====================================================================
 //  COLORARE DISEGNI (riempimento a secchiello su pixel-art)
 // =====================================================================
+// Disegni da colorare fatti a mano (coordinate su 64x64): contorni chiusi e zone grandi
+const ART = (() => {
+  const E = (x, cx, cy, rx, ry, rot = 0) => { x.beginPath(); x.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2); x.fill(); x.stroke(); };
+  const stem = (x, cx, y0, y1) => { x.beginPath(); x.rect(cx - 1.8, y0, 3.6, y1 - y0); x.fill(); x.stroke(); };
+  const leaf = (x, sx, sy, dir, len = 16) => {
+    x.beginPath(); x.moveTo(sx, sy);
+    x.quadraticCurveTo(sx + dir * len * 0.8, sy - len * 0.75, sx + dir * len, sy - 2);
+    x.quadraticCurveTo(sx + dir * len * 0.55, sy + len * 0.35, sx, sy); x.fill(); x.stroke();
+  };
+  const smallFlower = (x, cx, cy, r) => {
+    for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; E(x, cx + Math.cos(a) * r, cy + Math.sin(a) * r, r * 0.8, r * 0.8); }
+    E(x, cx, cy, r * 0.6, r * 0.6);
+  };
+  return {
+    '🌼': x => { // margherita
+      stem(x, 32, 34, 63); leaf(x, 32, 52, -1); leaf(x, 32, 46, 1);
+      for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; E(x, 32 + Math.cos(a) * 12.5, 22 + Math.sin(a) * 12.5, 4.3, 8, a + Math.PI / 2); }
+      E(x, 32, 22, 7, 7);
+    },
+    '🌷': x => { // tulipano
+      stem(x, 32, 36, 63); leaf(x, 32, 58, -1, 18); leaf(x, 32, 54, 1, 18);
+      x.beginPath(); x.moveTo(18, 12); x.lineTo(25, 22); x.lineTo(32, 8); x.lineTo(39, 22); x.lineTo(46, 12);
+      x.quadraticCurveTo(48, 36, 32, 39); x.quadraticCurveTo(16, 36, 18, 12); x.fill(); x.stroke();
+      x.beginPath(); x.moveTo(25, 22); x.quadraticCurveTo(26, 34, 32, 39); x.moveTo(39, 22); x.quadraticCurveTo(38, 34, 32, 39); x.stroke();
+    },
+    '🌻': x => { // girasole
+      stem(x, 32, 36, 63); leaf(x, 32, 54, -1, 18); leaf(x, 32, 48, 1, 18);
+      for (let i = 0; i < 12; i++) {
+        const a = i * Math.PI / 6, c = Math.cos, s = Math.sin;
+        x.beginPath(); x.moveTo(32 + c(a - .28) * 9, 24 + s(a - .28) * 9);
+        x.quadraticCurveTo(32 + c(a) * 16, 24 + s(a) * 16, 32 + c(a) * 21, 24 + s(a) * 21);
+        x.quadraticCurveTo(32 + c(a) * 16, 24 + s(a) * 16, 32 + c(a + .28) * 9, 24 + s(a + .28) * 9);
+        x.fill(); x.stroke();
+      }
+      E(x, 32, 24, 10.5, 10.5); E(x, 32, 24, 5, 5);
+    },
+    '🌹': x => { // rosa
+      stem(x, 32, 32, 63); leaf(x, 32, 50, -1); leaf(x, 32, 42, 1);
+      x.beginPath(); x.moveTo(30, 56); x.lineTo(27, 54); x.lineTo(30, 52); x.fill(); x.stroke();
+      E(x, 32, 15, 13, 9);
+      x.beginPath(); x.arc(32, 15, 6, 0.3, Math.PI * 1.7); x.stroke();
+      x.beginPath(); x.arc(32, 15, 2.6, 0, Math.PI * 1.5); x.stroke();
+      x.beginPath(); x.moveTo(17, 16); x.quadraticCurveTo(15, 36, 32, 38); x.quadraticCurveTo(49, 36, 47, 16);
+      x.quadraticCurveTo(40, 25, 32, 21); x.quadraticCurveTo(24, 25, 17, 16); x.fill(); x.stroke();
+      x.beginPath(); x.moveTo(32, 21); x.quadraticCurveTo(30, 30, 32, 38); x.stroke();
+    },
+    '🌸': x => { // fiore di ciliegio
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+        E(x, 32 + Math.cos(a) * 13, 32 + Math.sin(a) * 13, 11, 11);
+      }
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + i * Math.PI * 2 / 5, ox = 32 + Math.cos(a) * 23, oy = 32 + Math.sin(a) * 23;
+        x.beginPath(); x.moveTo(ox + Math.cos(a + 1.6) * 2.5, oy + Math.sin(a + 1.6) * 2.5); x.lineTo(32 + Math.cos(a) * 19, 32 + Math.sin(a) * 19);
+        x.lineTo(ox + Math.cos(a - 1.6) * 2.5, oy + Math.sin(a - 1.6) * 2.5); x.stroke();
+      }
+      E(x, 32, 32, 7, 7);
+    },
+    '💐': x => { // vaso di fiori
+      x.beginPath(); x.moveTo(24, 40); x.lineTo(20, 22); x.moveTo(32, 40); x.lineTo(32, 16); x.moveTo(40, 40); x.lineTo(44, 22); x.stroke();
+      leaf(x, 28, 36, -1, 12); leaf(x, 36, 34, 1, 12);
+      smallFlower(x, 19, 19, 5); smallFlower(x, 32, 13, 5.5); smallFlower(x, 45, 19, 5);
+      x.beginPath(); x.moveTo(21, 46); x.lineTo(43, 46); x.lineTo(40, 62); x.lineTo(24, 62); x.closePath(); x.fill(); x.stroke();
+      x.beginPath(); x.rect(18, 40, 28, 6); x.fill(); x.stroke();
+    },
+    '🦋': x => { // farfalla
+      x.beginPath(); x.moveTo(31, 21); x.quadraticCurveTo(26, 8, 22, 9); x.moveTo(33, 21); x.quadraticCurveTo(38, 8, 42, 9); x.stroke();
+      E(x, 19, 25, 13, 11, -0.5); E(x, 45, 25, 13, 11, 0.5);
+      E(x, 22, 44, 10, 9, 0.4); E(x, 42, 44, 10, 9, -0.4);
+      E(x, 17, 24, 4, 4); E(x, 47, 24, 4, 4); E(x, 21, 45, 3.5, 3.5); E(x, 43, 45, 3.5, 3.5);
+      E(x, 32, 36, 3.5, 15); E(x, 32, 21, 4, 4);
+    },
+    '🐞': x => { // coccinella
+      for (const side of [-1, 1]) for (const yy of [30, 38, 46]) { x.beginPath(); x.moveTo(32 + side * 14, yy); x.lineTo(32 + side * 24, yy + 3); x.stroke(); }
+      x.beginPath(); x.moveTo(29, 12); x.quadraticCurveTo(24, 4, 20, 6); x.moveTo(35, 12); x.quadraticCurveTo(40, 4, 44, 6); x.stroke();
+      E(x, 32, 18, 9, 8);
+      E(x, 32, 38, 19, 19);
+      x.beginPath(); x.moveTo(32, 20); x.lineTo(32, 57); x.stroke();
+      E(x, 24, 30, 4, 4); E(x, 40, 30, 4, 4); E(x, 22, 43, 3.6, 3.6); E(x, 42, 43, 3.6, 3.6); E(x, 27, 51, 2.8, 2.8); E(x, 37, 51, 2.8, 2.8);
+    },
+  };
+})();
+
 function lineArt(emoji, res) {
+  if (ART[emoji]) {
+    const c = document.createElement('canvas'); c.width = c.height = res;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, res, res);
+    x.save(); x.scale(res / 64, res / 64);
+    x.lineWidth = 2; x.strokeStyle = '#000'; x.fillStyle = '#fff'; x.lineJoin = 'round'; x.lineCap = 'round';
+    ART[emoji](x);
+    x.restore();
+    const im = x.getImageData(0, 0, res, res), d = im.data;
+    for (let i = 0; i < d.length; i += 4) { const v = (d[i] + d[i + 1] + d[i + 2]) / 3 < 150 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+    return im;
+  }
   const c = document.createElement('canvas'); c.width = c.height = res;
   const x = c.getContext('2d');
   drawSubject(x, emoji, res, 0.8);
