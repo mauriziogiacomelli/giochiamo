@@ -1759,7 +1759,12 @@ function diffScreen(sc) {
       placed.push(Object.assign({}, o, { gone: true })); copy.push(o);
       diffs.push({ x: o.x, y: o.y, e }); continue;
     }
-    const i = candidates.findIndex(o => !o.used && (type !== 'hue' || !pale.has(o.e)));
+    // girare ha senso solo per gli oggetti non simmetrici
+    const asym = new Set(['🐦', '🐌', '🐿️', '🦔', '🪁', '🐝', '🕊️', '🐠', '🐟', '🐬', '🐳', '🐢', '🦑', '⛵', '🦩', '🚀', '☄️', '🛰️', '🔭', '🚂',
+      '👟', '🖍️', '🎈', '⛱️', '👒', '🍦', '⏰', '📚', '🎨', '🐶', '🐱', '🦋', '🌷', '🐸', '🍎', '🧦', '🧩', '🌙', '👩‍🚀', '🖼️']);
+    const sym = new Set(['⚽', '🍄', '🐰', '🌻', '🐞', '🌍', '⭐', '🌟', '🪐', '👽', '🎁', '🏐', '🏰', '🌈', '🧸', '📖', '🛸', '🦀', '🐙', '🪀', '🐚']);
+    const ok = o => !o.used && (type !== 'hue' || !pale.has(o.e)) && (type !== 'flip' || (asym.has(o.e) && !sym.has(o.e)));
+    const i = candidates.findIndex(ok);
     if (i < 0) continue;
     const o = candidates[i]; o.used = true;
     const c = copy[placed.indexOf(o)];
