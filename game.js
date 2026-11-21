@@ -783,7 +783,10 @@ function saveCanvas(c, name, scale) {
   const b = big.getContext('2d'); b.imageSmoothingEnabled = false; b.drawImage(c, 0, 0, big.width, big.height);
   big.toBlob(blob => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `${name}-${new Date().toISOString().slice(0, 10)}.png`; a.click();
+    // nome unico per ogni salvataggio (data e ora locali), così non sovrascrive i precedenti
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    const stamp = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}_${z(d.getHours())}-${z(d.getMinutes())}-${z(d.getSeconds())}`;
+    a.download = `${name}-${stamp}.png`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   });
 }
