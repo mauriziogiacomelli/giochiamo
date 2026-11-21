@@ -5,6 +5,31 @@
 // =====================================================================
 const NOME = '';
 
+// ---------- lingua: italiano / inglese ----------
+let LANG = (() => { try { return localStorage.getItem('lingua') || 'it'; } catch (e) { return 'it'; } })();
+const EN = {
+  'Giochiamo!': "Let's play!", 'Colorare disegni': 'Coloring', 'Dipingere con le dita': 'Finger painting',
+  'Trova le differenze': 'Spot the difference', 'Gioco dei vestiti': 'Dress up', 'Trova i particolari': 'Find the details',
+  'Fattoria': 'Farm', 'Veicoli': 'Vehicles', 'Frutta': 'Fruit', 'Spazio': 'Space', 'Fiori': 'Flowers',
+  'Scegli la musica': 'Choose the music', 'Carillon delle stelle': 'Star music box', 'Ninna nanna': 'Lullaby',
+  'Onde del mare': 'Ocean waves', 'Nuvole': 'Clouds', 'Silenzio': 'Silence', 'Fatto': 'Done', 'Musica': 'Music',
+  'Indietro': 'Back', 'Ancora!': 'Again!', 'Ricarica': 'Reload', 'Chiudi': 'Close', 'Ciao ciao!': 'Bye bye!',
+  "Per uscire usa il tasto Home<br>o scorri verso l'alto dal basso.": 'To exit, press the Home button<br>or swipe up from the bottom.',
+  'Resta': 'Stay', 'Voce': 'Voice', 'Ricomincia': 'Start over', 'Salva': 'Save', 'Cancella': 'Clear',
+  'MODELLO': 'ORIGINAL', 'COPIA': 'COPY', 'Trovate:': 'Found:', 'BRAVISSIMA!': 'WELL DONE!', 'HAI TROVATO TUTTO!': 'YOU FOUND THEM ALL!',
+  'Gonna e pantaloni': 'Skirts & pants', 'Capelli': 'Hair', 'Accessori': 'Accessories', 'Maglia': 'Tops', 'Pantaloni': 'Pants',
+  'Scarpe': 'Shoes', 'Occhi': 'Eyes', 'Pelle': 'Skin', 'Colori': 'Colors', 'Bambina': 'Girl', 'Bambino': 'Boy',
+  'A caso': 'Random', 'Foto': 'Photo', 'Giardino': 'Garden', 'Mare': 'Sea', 'Cameretta': 'Bedroom',
+  'Difficile (genitori)': 'Hard (parents)', 'Facile': 'Easy', 'Nuova': 'New',
+};
+const EN_KEYS = Object.keys(EN).sort((a, b) => b.length - a.length);
+// traduce tutte le scritte note dentro un testo/HTML
+function tr(html) {
+  if (LANG !== 'en' || typeof html !== 'string') return html;
+  for (const k of EN_KEYS) if (html.includes(k)) html = html.split(k).join(EN[k]);
+  return html;
+}
+
 const W = 1024, H = 768;
 const stage = document.getElementById('stage');
 
@@ -46,7 +71,7 @@ function hex2rgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >>
 function el(tag, css, parent, html) {
   const e = document.createElement(tag);
   if (css) Object.assign(e.style, css);
-  if (html !== undefined) e.innerHTML = html;
+  if (html !== undefined) e.innerHTML = tr(String(html));
   (parent || stage).appendChild(e);
   return e;
 }
@@ -545,12 +570,19 @@ function homeScreen() {
       if (navigator.onLine) {
         const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
         if (reg) await reg.update();
-        if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+        if (window.caches) for (const k of await caches.keys()) if (!k.startsWith('giochiamo-voce')) await caches.delete(k);   // le voci restano
       }
     } catch (e) { /* si ricarica comunque */ }
     location.reload();
   });
   rl.className = 'btn green';
+  // lingua
+  const lg = tap(el('div', { left: '20px', top: '16px', width: '190px', height: '54px', fontSize: '24px' }, stage, LANG === 'en' ? '🌍 Italiano' : '🌍 English'), () => {
+    LANG = LANG === 'en' ? 'it' : 'en'; store('lingua', LANG);
+    Voice.loadClips(LANG); SFX.flip(); show(homeScreen);
+    Voice.say('Ciao! Giochiamo!');
+  });
+  lg.className = 'btn blue';
   // chiudi: funziona nell'app installata (Android/PC); dove il sistema non lo permette spiega come uscire
   const cl = tap(el('div', { left: '226px', top: '700px', width: '170px', height: '54px', fontSize: '24px' }, stage, '✖ Chiudi'), () => {
     SFX.no();
@@ -616,6 +648,38 @@ const NAMES = {
   '🌼': 'la margherita', '🌷': 'il tulipano', '🌻': 'il girasole', '🌹': 'la rosa', '🌸': 'il fiore di ciliegio', '💐': 'il mazzo di fiori',
   '🦋': 'la farfalla', '🐞': 'la coccinella', '🌺': "l'ibisco", '🍀': 'il quadrifoglio',
 };
+const NAMES_EN = {
+  '🐄': 'the cow', '🐖': 'the pig', '🐔': 'the hen', '🐑': 'the sheep', '🐴': 'the horse', '🐱': 'the cat', '🐶': 'the dog',
+  '🦆': 'the duck', '🐰': 'the bunny', '🐐': 'the goat',
+  '🚗': 'the car', '🚌': 'the bus', '🚒': 'the fire truck', '🚑': 'the ambulance', '🚜': 'the tractor', '✈️': 'the airplane',
+  '🚁': 'the helicopter', '🚢': 'the ship', '🚂': 'the train', '🚲': 'the bicycle',
+  '🍎': 'the apple', '🍌': 'the banana', '🍇': 'the grapes', '🍐': 'the pear', '🍊': 'the orange', '🍓': 'the strawberry', '🍒': 'the cherries',
+  '🍉': 'the watermelon', '🍍': 'the pineapple', '🍋': 'the lemon',
+  '🚀': 'the rocket', '🛸': 'the flying saucer', '🪐': 'the planet', '🌙': 'the moon', '👩‍🚀': 'the astronaut', '🛰️': 'the satellite',
+  '⭐': 'the star', '☄️': 'the comet', '🌍': 'the Earth', '👽': 'the alien',
+  '🦒': 'the giraffe', '🐘': 'the elephant', '🦁': 'the lion', '🐊': 'the crocodile', '🐵': 'the monkey', '🦓': 'the zebra', '🐻': 'the bear',
+  '🐧': 'the penguin', '🦛': 'the hippo', '🐯': 'the tiger',
+  '🌼': 'the daisy', '🌷': 'the tulip', '🌻': 'the sunflower', '🌹': 'the rose', '🌸': 'the cherry blossom', '💐': 'the bouquet',
+  '🦋': 'the butterfly', '🐞': 'the ladybug', '🌺': 'the hibiscus', '🍀': 'the four-leaf clover',
+  '🐌': 'the snail', '🐝': 'the bee', '🐦': 'the little bird', '🐸': 'the frog', '🍄': 'the mushroom', '⚽': 'the ball', '🪁': 'the kite',
+  '🐿️': 'the squirrel', '🕊️': 'the dove', '🎈': 'the balloon', '🐠': 'the tropical fish', '🐟': 'the fish', '🐙': 'the octopus',
+  '🐬': 'the dolphin', '🐳': 'the whale', '🐢': 'the turtle', '🦑': 'the squid', '⛵': 'the sailboat', '🦀': 'the crab',
+  '🐚': 'the seashell', '🏐': 'the beach ball', '🍦': 'the ice cream', '🕶️': 'the sunglasses', '⛱️': 'the beach umbrella', '🏰': 'the castle',
+  '🦩': 'the flamingo', '👒': 'the hat', '🖼️': 'the picture', '⏰': 'the alarm clock', '🌈': 'the rainbow', '🧸': 'the teddy bear',
+  '🧩': 'the puzzle', '📚': 'the books', '🎁': 'the present', '👟': 'the shoe', '🧦': 'the socks', '🖍️': 'the crayons', '🎨': 'the paint palette',
+  '🪀': 'the yo-yo', '📖': 'the book', '🌟': 'the little star', '🔭': 'the telescope', '🦔': 'the hedgehog', '🌳': 'the tree',
+};
+const PRAISE_EN = ['Good job!', 'Well done!', 'Great!', 'Awesome!', 'Super!', 'Hooray!'];
+const RETRY_EN = ['Almost… try again!', 'Oops… try again!', 'Not a match… try again!', 'So close… try again!'];
+// frasi fisse: italiano -> inglese
+const SAY_EN = {
+  'Bravissima! Hai trovato tutte le coppie!': 'Well done! You found all the pairs!',
+  'Bravissima! Hai trovato tutti i particolari!': 'Well done! You found all the details!',
+  'Trova i particolari!': 'Find the details!', 'Livello difficile. Pronti? Via!': 'Hard level. Ready? Go!',
+  'Guarda bene!': 'Look carefully!', 'Cerca ancora!': 'Keep looking!', 'Non è qui… riprova!': "It's not here… try again!",
+  'Trovato!': 'Found it!', 'Sì!': 'Yes!', 'Bene!': 'Good!', 'Ciao! Giochiamo!': "Hi! Let's play!",
+  'Bravissimi! Tutti trovati!': 'Great job! All found!', 'Nuovo record!': 'New record!',
+};
 const PRAISE = ['Brava!', 'Bravissima!', 'Che brava!', 'Molto bene!', 'Ben fatto!', 'Evviva!'];
 const RETRY = ['Quasi… riprova!', 'Peccato… prova ancora!', 'Non sono uguali… riprova!', 'Ops… riprova!'];
 const pick = a => a[rnd(a.length)];
@@ -633,21 +697,66 @@ const Voice = {
     const score = v => (female.test(v.name) ? 4 : 0) + (quality.test(v.name) ? 3 : 0) + (v.localService ? 1 : 0) - (male.test(v.name) ? 10 : 0);
     this.voice = vs.sort((a, b) => score(b) - score(a))[0] || null;
   },
+  clips: {},        // per lingua: insieme dei file audio registrati disponibili
+  audio: null,
+  loadClips(lang) {
+    if (this.clips[lang]) return;
+    this.clips[lang] = new Set();
+    fetch(`voce/${lang}/elenco.json`).then(r => r.json()).then(l => { this.clips[lang] = new Set(l); }).catch(() => {});
+  },
+  slug: t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+  duck(on) { if (Music.out && AC) Music.out.gain.setTargetAtTime(on ? 0.15 : 0.5, AC.currentTime, on ? 0.1 : 0.3); },
+  stop() {
+    if (this.audio) { this.audio.onended = null; this.audio.pause(); this.audio = null; }
+    if (this.ok) speechSynthesis.cancel();
+  },
+  // frase fissa (scritta in italiano): viene tradotta se il gioco è in inglese
   say(text) {
-    if (!this.on || !this.ok) return;
+    if (LANG === 'en') text = SAY_EN[text] || text;
+    this.speak(text);
+  },
+  praise(emoji) {
+    const n = (LANG === 'en' ? NAMES_EN : NAMES)[emoji];
+    this.speak(pick(LANG === 'en' ? PRAISE_EN : PRAISE) + (n ? ' ' + capFirst(n) + '!' : ''));
+  },
+  retry() { this.speak(pick(LANG === 'en' ? RETRY_EN : RETRY)); },
+  speak(text) {
+    if (!this.on) return;
+    this.stop();
+    // 1) voce registrata: frase intera o pezzo per pezzo
+    const have = this.clips[LANG] || new Set();
+    const whole = this.slug(text) + '.mp3';
+    const parts = have.has(whole) ? [whole] : (text.match(/[^!?.…]+[!?.…]+/g) || [text]).map(x => this.slug(x.trim()) + '.mp3');
+    if (parts.every(f => have.has(f))) {
+      this.duck(true);
+      const play = i => {
+        if (i >= parts.length) { this.audio = null; this.duck(false); return; }
+        const a = new Audio(`voce/${LANG}/${parts[i]}`);
+        this.audio = a; a.volume = 0.95;
+        a.onended = () => play(i + 1);
+        a.onerror = () => { this.duck(false); this.tts(text); };
+        a.play().catch(() => { this.duck(false); this.tts(text); });
+      };
+      play(0);
+      return;
+    }
+    // 2) riserva: sintesi vocale del telefono
+    this.tts(text);
+  },
+  tts(text) {
+    if (!this.ok) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'it-IT'; u.rate = 0.82; u.pitch = 1.15; u.volume = 0.9;   // calma e dolce
-      if (!this.voice) this.choose();
-      if (this.voice) u.voice = this.voice;
-      // abbassa la musica mentre parla
-      if (Music.out && AC) Music.out.gain.setTargetAtTime(0.15, AC.currentTime, 0.1);
-      u.onend = u.onerror = () => { if (Music.out && AC) Music.out.gain.setTargetAtTime(0.5, AC.currentTime, 0.3); };
+      u.lang = LANG === 'en' ? 'en-US' : 'it-IT'; u.rate = 0.82; u.pitch = 1.15; u.volume = 0.9;   // calma e dolce
+      if (LANG === 'it') { if (!this.voice) this.choose(); if (this.voice) u.voice = this.voice; }
+      this.duck(true);
+      u.onend = u.onerror = () => this.duck(false);
       speechSynthesis.speak(u);
     } catch (e) { /* niente voce: pazienza */ }
   },
 };
+Voice.loadClips(LANG);
 if (Voice.ok) { Voice.choose(); speechSynthesis.onvoiceschanged = () => Voice.choose(); }
 const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -682,11 +791,11 @@ function memoryScreen(t, nCards) {
         setTimeout(SFX.ok, 200);
         const all = ++found === nCards / 2;
         const nome = NAMES[t.items[a.k]];
-        Voice.say(all ? 'Bravissima! Hai trovato tutte le coppie!' : pick(PRAISE) + (nome ? ' ' + capFirst(nome) + '!' : ''));
+        if (all) Voice.say('Bravissima! Hai trovato tutte le coppie!'); else Voice.praise(t.items[a.k]);
         if (all) setTimeout(() => party('BRAVISSIMA!', () => show(memoryScreen, t, nCards), () => show(themePick, memoryScreen)), 900);
       } else {
         busy = true;
-        Voice.say(pick(RETRY));
+        Voice.retry();
         setTimeout(() => { a.classList.remove('open'); b.classList.remove('open'); busy = false; }, 1300);
       }
     });
@@ -696,8 +805,8 @@ function memoryScreen(t, nCards) {
   if (Voice.ok) {
     const vb = tap(el('div', { left: '262px', top: '700px', width: '170px', height: '56px', fontSize: '24px' }, stage, Voice.on ? '🔊 Voce' : '🔇 Voce'), () => {
       Voice.on = !Voice.on; store('voce', Voice.on ? 'on' : 'off');
-      vb.innerHTML = Voice.on ? '🔊 Voce' : '🔇 Voce'; vb.className = 'btn ' + (Voice.on ? 'green' : 'blue');
-      SFX.tap(); if (Voice.on) Voice.say('Ciao! Giochiamo!'); else speechSynthesis.cancel();
+      vb.innerHTML = tr(Voice.on ? '🔊 Voce' : '🔇 Voce'); vb.className = 'btn ' + (Voice.on ? 'green' : 'blue');
+      SFX.tap(); if (Voice.on) Voice.say('Ciao! Giochiamo!'); else Voice.stop();
     });
     vb.className = 'btn ' + (Voice.on ? 'green' : 'blue');
   }
@@ -1101,7 +1210,7 @@ function diffScreen(t) {
       }
     }
     const n = diffs.filter(d => d.found).length;
-    counter.innerHTML = `<span class="title" style="font-size:34px">Trovate: ${'★'.repeat(n)}${'☆'.repeat(N_DIFF - n)}</span>`;
+    counter.innerHTML = tr(`<span class="title" style="font-size:34px">Trovate: ${'★'.repeat(n)}${'☆'.repeat(N_DIFF - n)}</span>`);
   }
   function check(x, y) {
     const d = diffs.find(d => !d.found && Math.hypot(d.cx - x, d.cy - y) < 17);
@@ -1384,7 +1493,7 @@ function dressScreen() {
       tap(b, () => { cat = c.k; SFX.tap(); drawPanel(); });
     });
     const c = DOLL.catsOf(S.g).find(c => c.k === cat);
-    title.textContent = c.name;
+    title.textContent = tr(c.name);
     body.innerHTML = '';
     let y = 0;
     if (c.styles) {
@@ -1653,14 +1762,14 @@ function seekScreen(sc) {
         clearInterval(timer);
         const key = 'seekBest-' + sc.id, best = +(store(key) || 0), record = !best || secs < best;
         if (record) store(key, String(secs));
-        Voice.say(`Bravissimi! Tutti trovati in ${secs} secondi!` + (record ? ' Nuovo record!' : ''));
+        Voice.speak(LANG === 'en' ? 'Great job! All found!' + (record ? ' New record!' : '') : 'Bravissimi! Tutti trovati!' + (record ? ' Nuovo record!' : ''));
         setTimeout(() => party((record ? '🏆 RECORD ' : '⏱ ') + fmtTime(secs), () => show(seekScreen, sc), () => show(seekPick)), 900);
       } else {
         Voice.say('Bravissima! Hai trovato tutti i particolari!');
         setTimeout(() => party('BRAVISSIMA!', () => show(seekScreen, sc), () => show(seekPick)), 900);
       }
     } else if (hard) Voice.say(pick(['Trovato!', 'Sì!', 'Bene!']));
-    else { const nome = NAMES[t.e]; Voice.say(pick(PRAISE) + (nome ? ' ' + capFirst(nome) + '!' : '')); }
+    else Voice.praise(t.e);
   });
 
   const bh = hard ? 66 : 70;
