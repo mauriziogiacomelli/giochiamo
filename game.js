@@ -1754,11 +1754,14 @@ function diffScreen(sc) {
   const diffs = [];
   for (let type of types) {
     if (type === 'add') {
-      const [e, z] = sc.items[rnd(sc.items.length)], size = L.min + rnd(L.var), p = spot(z, size);
-      if (!p) continue;
-      const o = { e, z, x: p[0], y: p[1], size, rot: 0, flip: false, hue: false, gone: false, onlyCopy: true };
-      placed.push(Object.assign({}, o, { gone: true })); copy.push(o);
-      diffs.push({ x: o.x, y: o.y, e }); continue;
+      let p = null, e, z, size;
+      for (let k = 0; k < 6 && !p; k++) { [e, z] = sc.items[rnd(sc.items.length)]; size = L.min + rnd(L.var); p = spot(z, size); }
+      if (p) {
+        const o = { e, z, x: p[0], y: p[1], size, rot: 0, flip: false, hue: false, gone: false, onlyCopy: true };
+        placed.push(Object.assign({}, o, { gone: true })); copy.push(o);
+        diffs.push({ x: o.x, y: o.y, e }); continue;
+      }
+      type = 'gone';   // niente spazio libero: invece di aggiungere, togliamo
     }
     // girare ha senso solo per gli oggetti non simmetrici
     const asym = new Set(['🐦', '🐌', '🐿️', '🦔', '🪁', '🐝', '🕊️', '🐠', '🐟', '🐬', '🐳', '🐢', '🦑', '⛵', '🦩', '🚀', '☄️', '🛰️', '🔭', '🚂',
