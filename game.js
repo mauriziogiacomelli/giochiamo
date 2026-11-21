@@ -264,6 +264,7 @@ let cleanup = null;
 function show(fn, ...args) {
   if (cleanup) { try { cleanup(); } catch (e) {} cleanup = null; }
   stage.innerHTML = '';
+  stage.classList.remove('modern');
   animHooks = [];
   fn(...args);
 }
@@ -636,147 +637,269 @@ function diffScreen(t) {
 }
 
 // =====================================================================
-//  GIOCO DEI VESTITI
+//  GIOCO DEI VESTITI (grafica moderna, vettoriale)
 // =====================================================================
-const DRESS_PARTS = {
-  1: 'pelle', 2: 'capelli', 3: 'sopra', 4: 'sotto', 5: 'scarpe', 6: 'cappello', 7: 'occhi', 8: 'bocca', 9: 'guance',
+const DOLL = {
+  cats: [
+    { k: 'capelli', name: 'Capelli', icon: '💇‍♀️', styles: ['lunghi', 'coda', 'trecce', 'caschetto', 'chignon'] },
+    { k: 'accessori', name: 'Accessori', icon: '👑', styles: ['niente', 'fiocco', 'corona', 'cappello', 'cerchietto', 'gattina'] },
+    { k: 'sopra', name: 'Maglia', icon: '👚', styles: ['maglietta', 'felpa', 'canottiera', 'cuore', 'pois'] },
+    { k: 'sotto', name: 'Gonna e pantaloni', icon: '👗', styles: ['gonna', 'tutù', 'pantaloni', 'pantaloncini', 'vestito lungo', 'pois'] },
+    { k: 'scarpe', name: 'Scarpe', icon: '👟', styles: ['ballerine', 'stivali', 'sneakers', 'sandali'] },
+    { k: 'occhi', name: 'Occhi', icon: '👀', styles: null },
+    { k: 'pelle', name: 'Pelle', icon: '✋', styles: null },
+  ],
+  colors: ['#ff4f81', '#ff8fb1', '#ffc2d4', '#c77dff', '#7b5cff', '#4d96ff', '#7fd3f7',
+    '#2ec4b6', '#7bd389', '#ffd23f', '#ff9f1c', '#ff5d5d', '#ffffff', '#2b2d42'],
+  hair: ['#3b2219', '#6b3e26', '#a0663c', '#d9a066', '#f2d16b', '#e85d3f', '#ff8fb1'],
+  skin: ['#ffe3d1', '#f6c9a8', '#e0a47a', '#b9784e', '#8a5532', '#5c3720'],
+  eyes: ['#6b4430', '#3d7bd9', '#2e9e6a', '#7a5cff', '#2b2d42', '#b07a45'],
+  crop: { capelli: '60 10 280 380', accessori: '60 10 280 240', sopra: '96 250 208 170', sotto: '86 350 228 230', scarpe: '130 455 140 125' },
 };
-const DRESS_STYLES = {
-  cappello: ['niente', 'fiocco', 'corona', 'cappello', 'cerchietto'],
-  capelli: ['lunghi', 'coda', 'trecce', 'corti'],
-  sopra: ['maglietta', 'felpa', 'canottiera'],
-  sotto: ['gonna', 'pantaloni', 'pantaloncini', 'vestito lungo'],
-  scarpe: ['scarpe', 'stivali', 'sandali'],
-};
+DOLL.palette = k => k === 'pelle' ? DOLL.skin : k === 'occhi' ? DOLL.eyes : k === 'capelli' ? DOLL.hair.concat(DOLL.colors) : DOLL.colors;
+
+function shade(h, a) {
+  const f = v => Math.max(0, Math.min(255, Math.round(a < 0 ? v * (1 + a) : v + (255 - v) * a)));
+  const [r, g, b] = hex2rgb(h);
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+// Restituisce il codice SVG della bambina vestita secondo lo stato S
+function dollSVG(S, vb = '0 0 400 600', id = 'd') {
+  const C = S.color, st = k => DOLL.cats.find(c => c.k === k).styles[S.style[k]];
+  const line = c => shade(c, -0.28);
+  const P = (part, d, color, fill) => `<path data-part="${part}" d="${d}" fill="${fill || color}" stroke="${line(color)}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const E = (part, cx, cy, rx, ry, color, extra = '') => `<ellipse data-part="${part}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${color}" stroke="${line(color)}" stroke-width="3" ${extra}/>`;
+  const limb = (d, w) => `<path data-part="pelle" d="${d}" fill="none" stroke="${line(C.pelle)}" stroke-width="${w + 6}" stroke-linecap="round"/>` +
+    `<path data-part="pelle" d="${d}" fill="none" stroke="${C.pelle}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const pois = k => `<pattern id="${id}-pois-${k}" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="${C[k]}"/>` +
+    `<circle cx="6" cy="6" r="4.5" fill="#fff" opacity=".9"/><circle cx="18" cy="18" r="4.5" fill="#fff" opacity=".9"/></pattern>`;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><defs>${pois('sopra')}${pois('sotto')}` +
+    `<radialGradient id="${id}-hl" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`;
+  const H = C.capelli, hair = st('capelli');
+
+  // --- capelli dietro ---
+  const cap = 'M108,182 C100,72 300,72 292,182 Z';
+  if (hair === 'lunghi') s += P('capelli', 'M104,178 C96,64 304,64 296,178 L306,330 C292,348 278,330 264,348 C250,330 236,348 222,336 L178,336 C164,348 150,330 136,348 C122,330 108,348 94,330 Z', H);
+  if (hair === 'coda') s += P('capelli', cap, H) + P('capelli', 'M262,104 C340,80 368,170 336,262 C324,300 302,322 290,300 C318,240 312,168 262,140 Z', H);
+  if (hair === 'trecce') {
+    s += P('capelli', cap, H);
+    for (const side of [-1, 1]) {
+      const x = 200 + side * 96;
+      for (let y = 206; y <= 318; y += 28) s += E('capelli', x, y, 19, 17, H);
+      s += E('accessori', x, 344, 11, 9, C.accessori);
+    }
+  }
+  if (hair === 'caschetto') s += P('capelli', 'M100,182 C92,66 308,66 300,182 L302,266 C272,280 250,266 238,272 L162,272 C150,266 128,280 98,266 Z', H);
+  if (hair === 'chignon') s += P('capelli', cap, H) + E('capelli', 200, 70, 42, 38, H);
+
+  // --- gambe e piedi ---
+  s += limb('M183,380 L181,540', 26) + limb('M217,380 L219,540', 26);
+  s += E('pelle', 177, 550, 19, 10, C.pelle) + E('pelle', 223, 550, 19, 10, C.pelle);
+
+  // --- scarpe ---
+  const sh = st('scarpe'), cs = C.scarpe;
+  if (sh === 'ballerine') s += E('scarpe', 176, 550, 23, 13, cs) + E('scarpe', 224, 550, 23, 13, cs) +
+    `<circle data-part="scarpe" cx="176" cy="542" r="5" fill="${shade(cs, .5)}"/><circle data-part="scarpe" cx="224" cy="542" r="5" fill="${shade(cs, .5)}"/>`;
+  if (sh === 'stivali') s += P('scarpe', 'M164,468 h34 v74 q0,18 -16,18 h-22 q-12,0 -12,-10 q0,-8 16,-10 Z', cs) +
+    P('scarpe', 'M202,468 h34 v74 q0,10 12,10 q4,8 -10,8 h-20 q-16,0 -16,-18 Z', cs);
+  if (sh === 'sneakers') {
+    for (const x of [176, 224]) {
+      s += P('scarpe', `M${x - 26},552 q0,-22 18,-22 h14 q20,0 20,22 Z`, cs);
+      s += `<rect data-part="scarpe" x="${x - 27}" y="550" width="56" height="9" rx="4.5" fill="#fff" stroke="${line(cs)}" stroke-width="2"/>`;
+      s += `<path d="M${x - 6},536 h10 M${x - 8},542 h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+    }
+  }
+  if (sh === 'sandali') for (const x of [177, 223]) s += `<rect data-part="scarpe" x="${x - 20}" y="540" width="40" height="7" rx="3.5" fill="${cs}" stroke="${line(cs)}" stroke-width="2"/>` +
+    E('scarpe', x, 560, 24, 6, cs);
+
+  // --- sotto ---
+  const bo = st('sotto'), cb = C.sotto, fb = bo === 'pois' ? `url(#${id}-pois-sotto)` : null;
+  if (bo === 'gonna' || bo === 'pois') s += P('sotto', 'M158,366 L242,366 L274,452 Q200,472 126,452 Z', cb, fb);
+  if (bo === 'tutù') {
+    const tut = y0 => { let d = `M155,${y0 - 70} L245,${y0 - 70} L289,${y0}`; for (let i = 0; i < 7; i++) d += ' q-13,15 -26,0'; return d + ' Z'; };
+    s += P('sotto', tut(446), shade(cb, .35)) + P('sotto', tut(428), cb);
+  }
+  if (bo === 'pantaloni') s += P('sotto', 'M160,364 L240,364 L244,540 L207,540 L200,420 L193,540 L156,540 Z', cb);
+  if (bo === 'pantaloncini') s += P('sotto', 'M160,364 L240,364 L248,430 L207,430 L200,402 L193,430 L152,430 Z', cb);
+  if (bo === 'vestito lungo') s += P('sotto', 'M160,356 L240,356 L292,536 Q200,560 108,536 Z', cb) +
+    `<path d="M140,500 Q200,520 260,500" fill="none" stroke="${shade(cb, .45)}" stroke-width="6" stroke-linecap="round"/>`;
+
+  // --- braccia ---
+  s += limb('M158,292 C140,330 132,360 130,390', 24) + limb('M242,292 C260,330 268,360 270,390', 24);
+  s += E('pelle', 130, 397, 15, 15, C.pelle) + E('pelle', 270, 397, 15, 15, C.pelle);
+
+  // --- sopra ---
+  const to = st('sopra'), ct = C.sopra, ft = to === 'pois' ? `url(#${id}-pois-sopra)` : null;
+  const torso = 'M150,284 Q200,270 250,284 L247,382 Q200,392 153,382 Z';
+  if (to === 'maglietta' || to === 'cuore' || to === 'pois') {
+    s += P('sopra', 'M154,284 L122,318 L144,336 L164,314 Z', ct, ft) + P('sopra', 'M246,284 L278,318 L256,336 L236,314 Z', ct, ft);
+    s += P('sopra', torso, ct, ft);
+    s += `<path d="M182,279 Q200,298 218,279" fill="none" stroke="${line(ct)}" stroke-width="3"/>`;
+    if (to === 'cuore') s += `<path d="M200,352 C176,334 178,312 192,312 C198,312 200,318 200,320 C200,318 202,312 208,312 C222,312 224,334 200,352 Z" fill="#fff" stroke="${line(ct)}" stroke-width="2"/>`;
+  }
+  if (to === 'felpa') {
+    s += P('sopra', 'M154,282 C136,322 124,352 116,386 L144,394 C150,362 158,336 168,312 Z', ct);
+    s += P('sopra', 'M246,282 C264,322 276,352 284,386 L256,394 C250,362 242,336 232,312 Z', ct);
+    s += P('sopra', torso, ct);
+    s += `<rect data-part="sopra" x="172" y="342" width="56" height="26" rx="10" fill="${shade(ct, -.1)}" stroke="${line(ct)}" stroke-width="2"/>`;
+    s += `<path d="M190,286 v26 M210,286 v26" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+  }
+  if (to === 'canottiera') {
+    s += P('sopra', 'M162,292 Q200,282 238,292 L244,382 Q200,392 156,382 Z', ct);
+    s += `<rect data-part="sopra" x="166" y="270" width="9" height="26" rx="4" fill="${ct}"/><rect data-part="sopra" x="225" y="270" width="9" height="26" rx="4" fill="${ct}"/>`;
+  }
+
+  // --- collo, orecchie, testa ---
+  s += `<rect data-part="pelle" x="186" y="252" width="28" height="34" rx="12" fill="${C.pelle}" stroke="${line(C.pelle)}" stroke-width="3"/>`;
+  s += E('pelle', 112, 192, 16, 18, C.pelle) + E('pelle', 288, 192, 16, 18, C.pelle);
+  s += E('pelle', 200, 182, 90, 86, C.pelle);
+  // occhi
+  for (const x of [163, 237]) {
+    s += E('occhi', x, 194, 16, 20, C.occhi);
+    s += `<ellipse data-part="occhi" cx="${x}" cy="198" rx="9" ry="12" fill="#1d1b2c"/>`;
+    s += `<circle data-part="occhi" cx="${x - 6}" cy="187" r="6" fill="#fff"/><circle data-part="occhi" cx="${x + 5}" cy="204" r="2.8" fill="#fff"/>`;
+    const o = x < 200 ? -1 : 1;
+    s += `<path d="M${x + o * 13},180 l${o * 9},-7 M${x + o * 16},188 l${o * 10},-3" stroke="#1d1b2c" stroke-width="3" stroke-linecap="round"/>`;
+  }
+  s += `<path d="M148,164 Q163,154 178,162 M222,162 Q237,154 252,164" fill="none" stroke="${line(H)}" stroke-width="4.5" stroke-linecap="round"/>`;
+  s += `<ellipse cx="140" cy="226" rx="17" ry="10" fill="#ff7aa2" opacity=".45"/><ellipse cx="260" cy="226" rx="17" ry="10" fill="#ff7aa2" opacity=".45"/>`;
+  s += `<path d="M195,216 Q200,220 205,216" fill="none" stroke="${line(C.pelle)}" stroke-width="3" stroke-linecap="round"/>`;
+  s += `<path d="M182,232 Q200,256 218,232 Z" fill="#e0446a" stroke="#b8264f" stroke-width="3" stroke-linejoin="round"/>` +
+    `<path d="M190,243 Q200,236 210,243 Q200,252 190,243 Z" fill="#ff8fab"/>`;
+
+  // --- frangia ---
+  if (hair === 'caschetto') s += P('capelli', 'M106,190 C98,78 302,78 294,190 C290,160 280,140 270,132 L130,132 C120,140 110,160 106,190 Z', H);
+  else s += P('capelli', 'M108,188 C98,80 302,80 292,188 C284,152 268,128 246,122 C238,142 218,150 200,140 C182,152 160,148 152,126 C130,135 114,160 108,188 Z', H);
+  s += `<path d="M150,104 Q200,78 250,104" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>`;
+  if (hair === 'coda' || hair === 'chignon') s += E('accessori', hair === 'coda' ? 270 : 200, hair === 'coda' ? 116 : 104, 11, 9, C.accessori);
+
+  // --- accessori ---
+  const ac = st('accessori'), ca = C.accessori;
+  if (ac === 'fiocco') s += P('accessori', 'M262,104 C236,74 226,122 262,112 Z', ca) + P('accessori', 'M262,104 C288,74 298,122 262,112 Z', ca) + E('accessori', 262, 108, 9, 9, shade(ca, -.1));
+  if (ac === 'corona') s += P('accessori', 'M140,108 L148,54 L174,86 L200,42 L226,86 L252,54 L260,108 Q200,96 140,108 Z', ca) +
+    `<circle cx="200" cy="90" r="7" fill="#fff"/><circle cx="166" cy="98" r="5" fill="#fff" opacity=".85"/><circle cx="234" cy="98" r="5" fill="#fff" opacity=".85"/>`;
+  if (ac === 'cappello') s += E('accessori', 200, 112, 146, 28, ca) + P('accessori', 'M134,112 C134,36 266,36 266,112 Z', ca) +
+    `<path d="M136,98 Q200,86 264,98" fill="none" stroke="#fff" stroke-width="10"/>` + E('accessori', 240, 96, 12, 10, '#ff8fb1');
+  if (ac === 'cerchietto') s += `<path data-part="accessori" d="M110,160 C126,62 274,62 290,160" fill="none" stroke="${line(ca)}" stroke-width="18" stroke-linecap="round"/>` +
+    `<path data-part="accessori" d="M110,160 C126,62 274,62 290,160" fill="none" stroke="${ca}" stroke-width="12" stroke-linecap="round"/>` +
+    [0, 72, 144, 216, 288].map(a => E('accessori', 252 + 12 * Math.cos(a * Math.PI / 180), 88 + 12 * Math.sin(a * Math.PI / 180), 8, 8, '#fff')).join('') + E('accessori', 252, 88, 6, 6, '#ffd23f');
+  if (ac === 'gattina') {
+    s += P('accessori', 'M128,118 L132,48 L184,92 Z', ca) + P('accessori', 'M272,118 L268,48 L216,92 Z', ca);
+    s += `<path d="M140,104 L142,70 L168,92 Z M260,104 L258,70 L232,92 Z" fill="#ffc2d4"/>`;
+  }
+  // luce morbida sulla testa
+  s += `<ellipse cx="200" cy="170" rx="90" ry="86" fill="url(#${id}-hl)" pointer-events="none"/>`;
+  return s + '</svg>';
+}
+
 let dressState = null;
-function dressScreen(t) {
+function dressDefault() {
+  return {
+    style: { capelli: 0, accessori: 1, sopra: 3, sotto: 1, scarpe: 0 },
+    color: { capelli: '#a0663c', accessori: '#ff4f81', sopra: '#c77dff', sotto: '#ff8fb1', scarpe: '#ff4f81', occhi: '#6b4430', pelle: '#ffe3d1' },
+  };
+}
+function dressScreen() {
   if (!dressState) {
-    const saved = store('vestiti');
-    try { dressState = saved ? JSON.parse(saved) : null; } catch (e) { dressState = null; }
-    dressState = dressState || {
-      style: { cappello: 1, capelli: 0, sopra: 0, sotto: 0, scarpe: 0 },
-      color: { 1: '#ffd2a8', 2: '#b0702e', 3: '#ff66cc', 4: '#1a5cff', 5: '#ff2a1a', 6: '#ff2a1a', 7: '#000000', 8: '#ff2a1a', 9: '#ff9999' },
-    };
+    try { dressState = JSON.parse(store('vestiti2') || 'null'); } catch (e) { dressState = null; }
+    if (!dressState || !dressState.style || dressState.style.capelli === undefined) dressState = dressDefault();
   }
   const S = dressState;
-  bg('repeating-linear-gradient(45deg,#ffd6f0 0 24px,#ffc2e8 24px 48px)');
-  const RW = 64, RH = 96, SC = 7;
-  const frame = el('div', { position: 'absolute', left: '200px', top: '16px', width: px(RW * SC), height: px(RH * SC - 14),
-    background: '#fff', border: '6px solid #222', boxShadow: '0 0 0 6px #1fb890, 8px 8px 0 rgba(0,0,0,.35)', overflow: 'hidden' });
-  const c = pxCanvas(RW, RH, SC, { left: '0', top: '-14px' }, frame);
-  const x = c.getContext('2d');
-  let ids = new Uint8Array(RW * RH);
-  let cur = '#a020f0';
+  let cat = 'sopra';
+  stage.classList.add('modern');
+  bg('radial-gradient(circle at 25% 35%, #fff0f7 0%, #ffd6ec 35%, #e7c6ff 75%, #c8b6ff 100%)');
+  // brillantini
+  [[60, 120], [420, 90], [90, 520], [460, 430], [250, 40], [40, 330]].forEach(([x, y], i) => {
+    const t = el('div', { left: px(x), top: px(y), fontSize: px(22 + (i % 3) * 8), animationDelay: (i * 0.4) + 's' }, stage, '✨');
+    t.className = 'twinkle';
+  });
+  // pedana
+  el('div', { position: 'absolute', left: '80px', top: '640px', width: '360px', height: '56px', borderRadius: '50%',
+    background: 'radial-gradient(ellipse at center, rgba(123,44,191,.35), rgba(123,44,191,0) 70%)' });
+  const doll = el('div', { position: 'absolute', left: '40px', top: '24px', width: '440px', height: '660px' });
 
-  function render() {
-    ids = new Uint8Array(RW * RH);
-    const R = (id, x0, y0, w, h) => {
-      for (let y = Math.max(0, y0); y < Math.min(RH, y0 + h); y++) for (let xx = Math.max(0, x0); xx < Math.min(RW, x0 + w); xx++) ids[y * RW + xx] = id;
-    };
-    const st = k => DRESS_STYLES[k][S.style[k]];
-    const hair = st('capelli');
-    // capelli dietro
-    if (hair === 'lunghi') for (let y = 10; y < 50; y++) { const o = (y % 6 < 3) ? 0 : 1; R(2, 21 + o, y, 22 - o, 1); }
-    if (hair === 'coda') { R(2, 39, 13, 6, 6); for (let y = 18; y < 40; y++) R(2, 42 + ((y % 6 < 3) ? 0 : 1), y, 5, 1); }
-    if (hair === 'corti') R(2, 23, 10, 18, 18);
-    if (hair === 'trecce') { R(2, 18, 18, 5, 26); R(2, 41, 18, 5, 26); R(6, 18, 42, 5, 2); R(6, 41, 42, 5, 2); }
-    // gambe e braccia
-    R(1, 26, 60, 5, 26); R(1, 33, 60, 5, 26);
-    R(1, 17, 34, 5, 22); R(1, 42, 34, 5, 22);
-    // scarpe
-    const sh = st('scarpe');
-    if (sh === 'scarpe') { R(5, 24, 84, 8, 4); R(5, 32, 84, 8, 4); }
-    if (sh === 'stivali') { R(5, 25, 72, 7, 16); R(5, 32, 72, 7, 16); R(5, 24, 85, 8, 3); R(5, 32, 85, 8, 3); }
-    if (sh === 'sandali') { R(5, 25, 83, 7, 1); R(5, 24, 86, 8, 2); R(5, 32, 83, 7, 1); R(5, 32, 86, 8, 2); }
-    // sotto
-    const bo = st('sotto');
-    if (bo === 'gonna') for (let y = 52; y < 68; y++) { const e = Math.floor((y - 52) / 2); R(4, 23 - e, y, 18 + e * 2, 1); }
-    if (bo === 'pantaloni') { R(4, 24, 52, 16, 8); R(4, 25, 60, 7, 24); R(4, 32, 60, 7, 24); }
-    if (bo === 'pantaloncini') { R(4, 24, 52, 16, 8); R(4, 25, 60, 7, 6); R(4, 32, 60, 7, 6); }
-    if (bo === 'vestito lungo') for (let y = 50; y < 82; y++) { const e = Math.floor((y - 50) / 3); R(4, 23 - e, y, 18 + e * 2, 1); }
-    // sopra
-    const to = st('sopra');
-    if (to === 'maglietta') { R(3, 22, 32, 20, 22); R(3, 17, 32, 6, 8); R(3, 41, 32, 6, 8); }
-    if (to === 'felpa') { R(3, 22, 32, 20, 23); R(3, 17, 32, 6, 21); R(3, 41, 32, 6, 21); R(1, 17, 53, 5, 3); R(1, 42, 53, 5, 3); }
-    if (to === 'canottiera') { R(3, 24, 34, 16, 20); R(3, 25, 31, 3, 3); R(3, 36, 31, 3, 3); }
-    // collo e testa
-    R(1, 29, 29, 6, 4);
-    R(1, 24, 13, 16, 16); R(1, 23, 15, 18, 12); R(1, 26, 12, 12, 19);
-    R(7, 27, 19, 2, 3); R(7, 35, 19, 2, 3);           // occhi
-    R(9, 25, 23, 3, 2); R(9, 36, 23, 3, 2);           // guance
-    R(8, 30, 25, 4, 1); R(8, 29, 24, 1, 1); R(8, 34, 24, 1, 1); // sorriso
-    // frangia
-    if (hair !== 'corti') { R(2, 24, 10, 16, 5); R(2, 22, 12, 3, 12); R(2, 39, 12, 3, 12); }
-    else { R(2, 24, 10, 16, 4); R(2, 23, 12, 2, 6); R(2, 39, 12, 2, 6); }
-    // cappello
-    const ha = st('cappello');
-    if (ha === 'fiocco') { R(6, 36, 7, 5, 6); R(6, 44, 7, 5, 6); R(6, 41, 8, 3, 4); }
-    if (ha === 'corona') { R(6, 25, 5, 14, 5); R(6, 25, 2, 2, 3); R(6, 31, 1, 2, 4); R(6, 37, 2, 2, 3); }
-    if (ha === 'cappello') { R(6, 17, 9, 30, 3); R(6, 24, 1, 16, 8); }
-    if (ha === 'cerchietto') { R(6, 23, 9, 18, 2); R(6, 22, 11, 2, 3); R(6, 40, 11, 2, 3); }
+  const panel = el('div', { left: '520px', top: '20px', width: '484px', height: '728px' }); panel.className = 'm-panel';
+  const tabs = el('div', { position: 'absolute', left: '18px', top: '18px', right: '18px', height: '60px' }, panel);
+  const title = el('div', { left: '24px', top: '92px' }, panel); title.className = 'm-label';
+  const body = el('div', { position: 'absolute', left: '0', top: '136px', right: '0', bottom: '0' }, panel);
 
-    const img = x.createImageData(RW, RH), d = img.data;
-    const noLine = new Set([7, 8, 9]);
-    for (let y = 0; y < RH; y++) for (let xx = 0; xx < RW; xx++) {
-      const i = y * RW + xx, id = ids[i];
-      let rgb;
-      if (!id) {
-        // contorno esterno nero
-        const nb = [xx > 0 && ids[i - 1], xx < RW - 1 && ids[i + 1], y > 0 && ids[i - RW], y < RH - 1 && ids[i + RW]];
-        if (nb.some(v => v)) rgb = [0, 0, 0]; else { d[i * 4 + 3] = 0; continue; }
-      } else {
-        rgb = hex2rgb(S.color[id]);
-        if (!noLine.has(id)) {
-          const nb = [xx < RW - 1 ? ids[i + 1] : 0, y < RH - 1 ? ids[i + RW] : 0];
-          if (nb.some(v => v && v !== id && !noLine.has(v))) rgb = [0, 0, 0];
-        }
-      }
-      d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2]; d[i * 4 + 3] = 255;
-    }
-    x.clearRect(0, 0, RW, RH);
-    x.putImageData(img, 0, 0);
-    store('vestiti', JSON.stringify(S));
+  function save() { store('vestiti2', JSON.stringify(S)); }
+  function drawDoll(pop) {
+    doll.innerHTML = dollSVG(S, '0 0 400 600', 'main');
+    doll.firstChild.style.width = '100%'; doll.firstChild.style.height = '100%';
+    if (pop) { doll.classList.remove('mpop'); void doll.offsetWidth; doll.classList.add('mpop'); }
+    save();
   }
-  tap(c, ev => {
-    const [cx, cy] = canvasPos(c, ev);
-    // cerca la parte toccata (con un po' di tolleranza per le dita)
-    let id = 0;
-    for (let r = 0; r <= 2 && !id; r++) for (let dy = -r; dy <= r && !id; dy++) for (let dx = -r; dx <= r && !id; dx++) {
-      const xx = cx + dx, yy = cy + dy;
-      if (xx >= 0 && yy >= 0 && xx < RW && yy < RH) id = ids[yy * RW + xx];
-    }
-    if (!id || id === 7) { SFX.no(); return; }
-    S.color[id] = cur; SFX.fill(); render();
-  });
-  // tavolozza (+ colori pelle)
-  const pal = PALETTE.concat(['#ffd2a8', '#e0a070', '#a0623a', '#6b3e1f']);
-  const sws = [];
-  pal.forEach((col, i) => {
-    const s = el('div', { left: px(20 + (i % 3) * 56), top: px(16 + Math.floor(i / 3) * 96), width: '50px', height: '88px', background: col });
-    s.className = 'sw' + (col === cur ? ' sel' : '');
-    sws.push(s);
-    tap(s, () => { cur = col; sws.forEach(q => q.classList.remove('sel')); s.classList.add('sel'); SFX.tap(); });
-  });
-  // frecce per cambiare i vestiti
-  const rowsDef = [['cappello', '🎀'], ['capelli', '💇'], ['sopra', '👕'], ['sotto', '👗'], ['scarpe', '👟']];
-  rowsDef.forEach(([k, ic], r) => {
-    const y = 40 + r * 124;
-    const lab = el('div', { position: 'absolute', left: '738px', top: px(y), width: '270px', height: '100px', background: '#fff',
-      border: '4px solid #222', boxSizing: 'border-box', boxShadow: '5px 5px 0 rgba(0,0,0,.3)' });
-    spriteImg(ic, 56, lab, { position: 'absolute', left: '105px', top: '6px' });
-    const name = el('div', { position: 'absolute', left: '0', right: '0', bottom: '2px', textAlign: 'center', fontSize: '17px', color: '#222' }, lab);
-    const upd = () => { name.textContent = DRESS_STYLES[k][S.style[k]]; };
-    upd();
-    [[-1, '◀', '0'], [1, '▶', '190px']].forEach(([dir, ch, l]) => {
-      const a = tap(el('div', { left: l, top: '0', width: '72px', height: '92px', fontSize: '36px' }, lab, ch), () => {
-        const n = DRESS_STYLES[k].length;
-        S.style[k] = (S.style[k] + dir + n) % n; upd(); render(); SFX.flip();
-      });
-      a.className = 'btn blue';
+  function drawPanel() {
+    tabs.innerHTML = '';
+    DOLL.cats.forEach((c, i) => {
+      const b = el('div', { left: px(i * 64), top: '0' }, tabs, c.icon);
+      b.className = 'm-tab' + (c.k === cat ? ' on' : '');
+      tap(b, () => { cat = c.k; SFX.tap(); drawPanel(); });
     });
+    const c = DOLL.cats.find(c => c.k === cat);
+    title.textContent = c.name;
+    body.innerHTML = '';
+    let y = 0;
+    if (c.styles) {
+      c.styles.forEach((name, i) => {
+        const t = el('div', { left: px(24 + (i % 3) * 148), top: px(y + Math.floor(i / 3) * 148), width: '136px', height: '136px' }, body);
+        t.className = 'm-thumb' + (S.style[cat] === i ? ' on' : '');
+        const preview = { style: Object.assign({}, S.style, { [cat]: i }), color: S.color };
+        t.innerHTML = dollSVG(preview, DOLL.crop[cat], 't' + cat + i);
+        tap(t, () => { S.style[cat] = i; SFX.flip(); drawDoll(true); drawPanel(); });
+      });
+      y += Math.ceil(c.styles.length / 3) * 148 + 8;
+    }
+    const pal = DOLL.palette(cat);
+    const lab = el('div', { left: '24px', top: px(y), fontSize: '20px' }, body, 'Colori'); lab.className = 'm-label';
+    y += 40;
+    pal.forEach((col, i) => {
+      const sw = el('div', { left: px(28 + (i % 7) * 62), top: px(y + Math.floor(i / 7) * 62), background: col }, body);
+      sw.className = 'm-sw' + (S.color[cat] === col ? ' on' : '');
+      tap(sw, () => { S.color[cat] = col; SFX.fill(); drawDoll(true); drawPanel(); });
+    });
+  }
+  // tocco sulla bambina: seleziona la parte toccata
+  doll.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    const p = ev.target.closest && ev.target.closest('[data-part]');
+    if (!p) return;
+    cat = p.dataset.part; SFX.tap(); drawPanel();
   });
-  backBtn(() => show(homeScreen));
-  render();
+
+  // pulsanti in basso
+  const back = tap(el('div', { left: '20px', top: '692px', width: '160px', height: '58px' }, stage, '← Indietro'), () => {
+    SFX.tap(); show(homeScreen);
+  });
+  back.className = 'm-btn';
+  const rand = tap(el('div', { left: '196px', top: '692px', width: '150px', height: '58px' }, stage, '🎲 A caso'), () => {
+    for (const c of DOLL.cats) {
+      if (c.styles) S.style[c.k] = rnd(c.styles.length);
+      if (c.k !== 'pelle' && c.k !== 'occhi') { const p = DOLL.palette(c.k); S.color[c.k] = p[rnd(p.length)]; }
+    }
+    if (rnd(2)) S.style.accessori = rnd(DOLL.cats[1].styles.length);
+    SFX.ok(); drawDoll(true); drawPanel();
+  });
+  rand.className = 'm-btn primary';
+  const photo = tap(el('div', { left: '362px', top: '692px', width: '140px', height: '58px' }, stage, '📸 Foto'), () => {
+    SFX.win();
+    const svg = dollSVG(S, '0 0 400 600', 'foto').replace('<defs>',
+      '<defs><radialGradient id="bgf" cx="35%" cy="35%" r="80%"><stop offset="0" stop-color="#fff0f7"/><stop offset=".5" stop-color="#ffd6ec"/><stop offset="1" stop-color="#c8b6ff"/></radialGradient>')
+      .replace('</defs>', '</defs><rect x="-50" y="-50" width="500" height="700" fill="url(#bgf)"/>');
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = 800; c.height = 1200;
+      c.getContext('2d').drawImage(img, 0, 0, 800, 1200);
+      saveCanvas(c, 'vestiti', 1);
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+  photo.className = 'm-btn';
+
+  drawDoll(false);
+  drawPanel();
 }
 
 // ---------- avvio ----------
